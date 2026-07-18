@@ -1,0 +1,1961 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b5ed7" />
+  <meta name="description" content="Comparador personal de precios y lista de compras instalable." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAIAAADdvvtQAAAEM0lEQVR4nO3dwY3bRhiG4XGQW3JwGakqAdyFK3AXBlKVU4YPKSAHIYYSrbjc/f4ZkjPPc1jswZYI/O+OhhQBfvjl928N3uunow+AaxMQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEfn56AM4nb///G37H/z6x19jjuQSPnjkZdsRzTNiWj2gd6dzb+WM1g2oJJ17a2a0YkDl6dxbLaO1Auqazr11MloooP31bIy/5EVmskpAPU7OnfC3RQLannQ45q4vfn7zB7Qx4MLpjnmXE5o8oGdz7TTUwW93Bit+F9ZvnBOH8szMAb24HvSe8YuvP+zywXjTBnRIPRvvMmtD0wbEGOM20bP+CZ7WmOW2e0C6OVzXkjoGJJ1T6ZRRrz2Qes6m00S6BKSec+oxl/qA1HNm5dMpDkg951c7o8qA1HMVhZNyIZFIWUCWn2upmpcViIiAiNQE5PPrikqmZgUiIiAiAiIiICICIiIgIgIiIiAiAjrSx6+fjz6ElIAOc6vn6g0J6Bj33Vy6IQEd4LGY6zYkoNGetXLRhgQ01HYlV2xIQOO82sf3T1/GHEkhAQ0yZT1NQGPMWk8T0AAT19ME1Nvc9TSPe+pnzynV1etpVqBOFqmnCaiHdeppAiq3VD3NHqjW9FvmR1agMgvW0wRUZc16moBKLFtPmyygQ77NXrmeNlNAh9whung9bZqADrlDVD1tjoAOuUNUPTeXD+iQO0TV88O1AzrkDlH13Lt2QK+O6uPXz7UZqed/rh1Q2zewqobU8+jyAbVRDannRTME1Po3pJ5nJgmo9WxIPRvmCai19v3Tlz3b6je9pnq2TRXQTVVDe87gFq+nTRlQq2hotRsL323OgFrWkHr2mzag9t6G1PMmNU9tPvOzMt4UxGqbnvxRzjOvQDf7T+9Xq6fE/AG1oktE6nnREgG1ePzqeWaVgFoQgXo2LBRQ23ep+vG/dDqYOawV0M3+JtTzqhUDavvKUM8eiwbUXutDPTutG1D7byXPfmfb0gG1f1t5/MlO83+VwQZfZXAwAREREBEBEREQkZqA8s0845VMzQpEREBEygLyKXYtVfOyAhGpDMgidBWFkypegTR0frUzqv8I09CZlU+nyx5IQ+fUYy69NtEaOptOE6m5H2iDW4UO1/WPuXtAPyhpsDEfAuMCYkouJBIREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQER+QfAXF8Xgm48vAAAAABJRU5ErkJggg==" />
+  <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAIAAADdvvtQAAAEM0lEQVR4nO3dwY3bRhiG4XGQW3JwGakqAdyFK3AXBlKVU4YPKSAHIYYSrbjc/f4ZkjPPc1jswZYI/O+OhhQBfvjl928N3uunow+AaxMQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEfn56AM4nb///G37H/z6x19jjuQSPnjkZdsRzTNiWj2gd6dzb+WM1g2oJJ17a2a0YkDl6dxbLaO1Auqazr11MloooP31bIy/5EVmskpAPU7OnfC3RQLannQ45q4vfn7zB7Qx4MLpjnmXE5o8oGdz7TTUwW93Bit+F9ZvnBOH8szMAb24HvSe8YuvP+zywXjTBnRIPRvvMmtD0wbEGOM20bP+CZ7WmOW2e0C6OVzXkjoGJJ1T6ZRRrz2Qes6m00S6BKSec+oxl/qA1HNm5dMpDkg951c7o8qA1HMVhZNyIZFIWUCWn2upmpcViIiAiNQE5PPrikqmZgUiIiAiAiIiICICIiIgIgIiIiAiAjrSx6+fjz6ElIAOc6vn6g0J6Bj33Vy6IQEd4LGY6zYkoNGetXLRhgQ01HYlV2xIQOO82sf3T1/GHEkhAQ0yZT1NQGPMWk8T0AAT19ME1Nvc9TSPe+pnzynV1etpVqBOFqmnCaiHdeppAiq3VD3NHqjW9FvmR1agMgvW0wRUZc16moBKLFtPmyygQ77NXrmeNlNAh9whung9bZqADrlDVD1tjoAOuUNUPTeXD+iQO0TV88O1AzrkDlH13Lt2QK+O6uPXz7UZqed/rh1Q2zewqobU8+jyAbVRDannRTME1Po3pJ5nJgmo9WxIPRvmCai19v3Tlz3b6je9pnq2TRXQTVVDe87gFq+nTRlQq2hotRsL323OgFrWkHr2mzag9t6G1PMmNU9tPvOzMt4UxGqbnvxRzjOvQDf7T+9Xq6fE/AG1oktE6nnREgG1ePzqeWaVgFoQgXo2LBRQ23ep+vG/dDqYOawV0M3+JtTzqhUDavvKUM8eiwbUXutDPTutG1D7byXPfmfb0gG1f1t5/MlO83+VwQZfZXAwAREREBEBEREQkZqA8s0845VMzQpEREBEygLyKXYtVfOyAhGpDMgidBWFkypegTR0frUzqv8I09CZlU+nyx5IQ+fUYy69NtEaOptOE6m5H2iDW4UO1/WPuXtAPyhpsDEfAuMCYkouJBIREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQER+QfAXF8Xgm48vAAAAABJRU5ErkJggg==" />
+  <style>
+:root {
+  --primary: #0b5ed7;
+  --primary-dark: #084298;
+  --accent: #0f9d78;
+  --danger: #c93838;
+  --surface: #ffffff;
+  --surface-alt: #f4f7fb;
+  --text: #19202a;
+  --muted: #667085;
+  --border: #dfe5ee;
+  --shadow: 0 12px 30px rgba(23, 43, 77, 0.09);
+  --radius: 18px;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--surface-alt);
+  color: var(--text);
+}
+
+button, input, select { font: inherit; }
+
+button { cursor: pointer; }
+
+.hidden { display: none !important; }
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  padding: 14px max(18px, calc((100vw - 1280px) / 2));
+  background: rgba(255,255,255,.94);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(16px);
+}
+
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-icon { width: 46px; height: 46px; border-radius: 13px; }
+.brand h1 { margin: 0; font-size: 1.08rem; }
+.brand p { margin: 3px 0 0; color: var(--muted); font-size: .79rem; }
+.top-actions { display: flex; gap: 8px; }
+
+.nav-tabs {
+  position: sticky;
+  top: 75px;
+  z-index: 18;
+  display: flex;
+  gap: 8px;
+  padding: 9px max(18px, calc((100vw - 1280px) / 2));
+  overflow-x: auto;
+  background: rgba(244,247,251,.96);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+}
+
+.nav-btn {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 10px 14px;
+  border-radius: 999px;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.nav-btn.active { background: var(--primary); color: white; }
+
+main {
+  width: min(1280px, calc(100% - 28px));
+  margin: 24px auto 50px;
+}
+
+.view { display: none; }
+.view.active { display: block; }
+
+.hero-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: center;
+  padding: 30px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #0b5ed7, #063a86);
+  color: white;
+  box-shadow: var(--shadow);
+}
+
+.hero-card h2 { margin: 5px 0 10px; font-size: clamp(1.6rem, 4vw, 2.7rem); }
+.hero-card p { margin: 0; max-width: 690px; color: rgba(255,255,255,.84); }
+
+.eyebrow {
+  display: inline-block;
+  color: var(--primary);
+  font-size: .73rem;
+  font-weight: 800;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+
+.hero-card .eyebrow { color: #b9d8ff; }
+
+.btn {
+  min-height: 42px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 9px 15px;
+  font-weight: 800;
+  transition: transform .15s ease, opacity .15s ease, background .15s ease;
+}
+
+.btn:hover { transform: translateY(-1px); }
+.btn:disabled { cursor: not-allowed; opacity: .5; transform: none; }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-secondary { background: white; border-color: var(--border); color: var(--text); }
+.btn-accent { background: var(--accent); color: white; }
+.btn-danger { background: #fff1f1; color: var(--danger); border-color: #f1bcbc; }
+.btn-light { background: white; color: var(--primary-dark); }
+.btn-sm { min-height: 36px; padding: 7px 11px; font-size: .84rem; }
+.full-width { width: 100%; }
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin: 18px 0;
+}
+
+.stat-card {
+  background: var(--surface);
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 18px rgba(23,43,77,.04);
+}
+
+.stat-card span { display: block; color: var(--muted); font-size: .84rem; }
+.stat-card strong { display: block; margin-top: 7px; font-size: 1.75rem; }
+
+.content-grid, .scanner-layout, .settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: 0 7px 22px rgba(23,43,77,.05);
+}
+
+.panel-header, .section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+}
+
+.panel-header { margin-bottom: 15px; }
+.panel h3, .section-heading h2 { margin: 3px 0 4px; }
+.panel p, .section-heading p { margin: 0; color: var(--muted); }
+
+.section-heading { margin-bottom: 18px; }
+.section-heading h2 { font-size: 2rem; }
+
+.toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 260px);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+input, select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 10px 12px;
+  color: var(--text);
+  background: white;
+  outline: none;
+}
+
+input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(11,94,215,.12); }
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.product-card, .compare-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(23,43,77,.04);
+}
+
+.product-image {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: linear-gradient(135deg,#e9f1ff,#f8fbff);
+}
+
+.product-image.placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--primary);
+  font-size: 2rem;
+  font-weight: 900;
+}
+
+.product-body, .compare-body { padding: 16px; }
+.product-body h3, .compare-body h3 { margin: 0 0 4px; }
+.product-meta { color: var(--muted); font-size: .86rem; line-height: 1.55; }
+.product-actions, .inline-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #edf4ff;
+  color: var(--primary-dark);
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: .76rem;
+  font-weight: 800;
+}
+
+.card-list { display: grid; gap: 10px; }
+.list-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--surface-alt);
+  border-radius: 12px;
+}
+.list-card strong { display: block; }
+.list-card small { color: var(--muted); }
+
+.empty-state {
+  color: var(--muted);
+  text-align: center;
+  padding: 30px 14px;
+  border-radius: 14px;
+}
+
+.table-wrap { overflow-x: auto; background: white; border: 1px solid var(--border); border-radius: var(--radius); }
+table { width: 100%; border-collapse: collapse; min-width: 720px; }
+th, td { text-align: left; padding: 13px 14px; border-bottom: 1px solid var(--border); }
+th { background: #f8fafc; color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; }
+tr:last-child td { border-bottom: 0; }
+
+.price-main { font-size: 1.35rem; font-weight: 900; color: var(--accent); }
+.price-old { color: var(--muted); text-decoration: line-through; }
+.compare-lines { display: grid; gap: 8px; margin-top: 14px; }
+.compare-line { display: flex; justify-content: space-between; gap: 10px; padding: 9px 0; border-top: 1px solid var(--border); }
+
+.shopping-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.shopping-summary span { display: block; color: var(--muted); font-size: .8rem; }
+.shopping-summary strong { display: block; margin-top: 4px; font-size: 1.35rem; }
+.switch-row { display: flex; align-items: center; gap: 8px; }
+.switch-row input { width: auto; min-height: auto; }
+
+.shopping-list { display: grid; gap: 10px; }
+.shopping-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 13px;
+}
+.shopping-item.completed { opacity: .58; }
+.shopping-item.completed h4 { text-decoration: line-through; }
+.shopping-item h4 { margin: 0 0 4px; }
+.shopping-item p { margin: 0; color: var(--muted); font-size: .86rem; }
+.check-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: white;
+  font-size: 1.15rem;
+}
+.shopping-item.completed .check-btn { background: var(--accent); border-color: var(--accent); color: white; }
+
+.optimization { display: grid; gap: 12px; }
+.store-group { border: 1px solid var(--border); border-radius: 14px; padding: 14px; }
+.store-group-header { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.store-group ul { margin: 0; padding-left: 20px; color: var(--muted); }
+
+.camera-box {
+  position: relative;
+  min-height: 360px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #101828;
+  border-radius: 16px;
+}
+.camera-box video, .camera-box img {
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+  max-height: 500px;
+  object-fit: contain;
+}
+.camera-placeholder { display: grid; gap: 7px; text-align: center; color: #d0d5dd; }
+.camera-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 12px; }
+.file-label input { display: none; }
+.scan-result { text-align: left; }
+.scan-data { display: grid; gap: 10px; }
+.scan-data div { padding: 11px; border-radius: 11px; background: var(--surface-alt); }
+.scan-data span { display: block; color: var(--muted); font-size: .78rem; }
+.scan-data strong { display: block; margin-top: 3px; }
+
+.notice {
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 14px;
+  background: #fff8e5;
+  border: 1px solid #f0d88a;
+  color: #6b5310;
+}
+
+.mini-list { display: grid; gap: 8px; }
+.mini-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--surface-alt);
+  border-radius: 11px;
+}
+
+.stack-form { display: grid; gap: 12px; }
+.stack-form label, .form-grid label, .small-modal label { display: grid; gap: 7px; font-weight: 700; font-size: .9rem; }
+.stack-form small { color: var(--muted); line-height: 1.5; }
+.backup-actions { display: flex; flex-wrap: wrap; gap: 9px; }
+.top-gap { margin-top: 18px; }
+
+.modal {
+  width: min(680px, calc(100% - 24px));
+  border: 0;
+  border-radius: 20px;
+  padding: 0;
+  box-shadow: 0 30px 80px rgba(0,0,0,.3);
+}
+.modal::backdrop { background: rgba(5, 15, 32, .63); backdrop-filter: blur(3px); }
+.modal form { padding: 22px; }
+.small-modal { width: min(450px, calc(100% - 24px)); }
+.modal-header { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; margin-bottom: 18px; }
+.modal-header h3 { margin: 3px 0 0; font-size: 1.5rem; }
+.icon-btn { width: 38px; height: 38px; border: 0; border-radius: 50%; background: var(--surface-alt); font-size: 1.4rem; }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+.full-field { grid-column: 1 / -1; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 20px; }
+.form-image-preview { width: 100%; max-height: 220px; object-fit: contain; margin-top: 14px; border-radius: 14px; background: var(--surface-alt); }
+
+.toast-container {
+  position: fixed;
+  right: 16px;
+  bottom: 18px;
+  z-index: 100;
+  display: grid;
+  gap: 8px;
+}
+.toast {
+  min-width: 250px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 13px 15px;
+  border-radius: 12px;
+  background: #101828;
+  color: white;
+  box-shadow: var(--shadow);
+  animation: toastIn .2s ease;
+}
+.toast.error { background: #8d2020; }
+.toast.success { background: #05634a; }
+@keyframes toastIn { from { transform: translateY(10px); opacity: 0; } }
+
+footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 24px max(18px, calc((100vw - 1280px) / 2));
+  color: var(--muted);
+  font-size: .8rem;
+  border-top: 1px solid var(--border);
+  background: white;
+}
+
+@media (max-width: 920px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .cards-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .content-grid, .scanner-layout, .settings-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 620px) {
+  .topbar { align-items: flex-start; }
+  .brand p { display: none; }
+  .brand h1 { font-size: .96rem; }
+  .brand-icon { width: 40px; height: 40px; }
+  .top-actions .btn { padding: 8px 10px; font-size: .8rem; }
+  .nav-tabs { top: 69px; }
+  main { width: min(100% - 20px, 1280px); margin-top: 16px; }
+  .hero-card, .section-heading, .panel-header { align-items: stretch; flex-direction: column; }
+  .hero-card { padding: 22px; }
+  .stats-grid { gap: 9px; }
+  .stat-card { padding: 15px; }
+  .cards-grid, .toolbar, .form-grid, .shopping-summary { grid-template-columns: 1fr; }
+  .shopping-item { grid-template-columns: auto minmax(0,1fr); }
+  .shopping-item .inline-actions { grid-column: 1 / -1; margin-top: 0; }
+  .section-heading h2 { font-size: 1.65rem; }
+  .camera-box, .camera-box video, .camera-box img { min-height: 280px; }
+  footer { flex-direction: column; }
+}
+
+
+.local-mode-banner {
+  width: min(1280px, calc(100% - 28px));
+  margin: 14px auto 0;
+  padding: 13px 16px;
+  border: 1px solid #e7c65d;
+  border-radius: 13px;
+  background: #fff7d6;
+  color: #654f08;
+  line-height: 1.45;
+  box-shadow: 0 5px 16px rgba(55, 42, 0, .06);
+}
+
+</style>
+  <title>Mi Compra Inteligente</title>
+</head>
+<body>
+  <div id="appShell">
+    <header class="topbar">
+      <div class="brand">
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAIAAADdvvtQAAAEM0lEQVR4nO3dwY3bRhiG4XGQW3JwGakqAdyFK3AXBlKVU4YPKSAHIYYSrbjc/f4ZkjPPc1jswZYI/O+OhhQBfvjl928N3uunow+AaxMQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEfn56AM4nb///G37H/z6x19jjuQSPnjkZdsRzTNiWj2gd6dzb+WM1g2oJJ17a2a0YkDl6dxbLaO1Auqazr11MloooP31bIy/5EVmskpAPU7OnfC3RQLannQ45q4vfn7zB7Qx4MLpjnmXE5o8oGdz7TTUwW93Bit+F9ZvnBOH8szMAb24HvSe8YuvP+zywXjTBnRIPRvvMmtD0wbEGOM20bP+CZ7WmOW2e0C6OVzXkjoGJJ1T6ZRRrz2Qes6m00S6BKSec+oxl/qA1HNm5dMpDkg951c7o8qA1HMVhZNyIZFIWUCWn2upmpcViIiAiNQE5PPrikqmZgUiIiAiAiIiICICIiIgIgIiIiAiAjrSx6+fjz6ElIAOc6vn6g0J6Bj33Vy6IQEd4LGY6zYkoNGetXLRhgQ01HYlV2xIQOO82sf3T1/GHEkhAQ0yZT1NQGPMWk8T0AAT19ME1Nvc9TSPe+pnzynV1etpVqBOFqmnCaiHdeppAiq3VD3NHqjW9FvmR1agMgvW0wRUZc16moBKLFtPmyygQ77NXrmeNlNAh9whung9bZqADrlDVD1tjoAOuUNUPTeXD+iQO0TV88O1AzrkDlH13Lt2QK+O6uPXz7UZqed/rh1Q2zewqobU8+jyAbVRDannRTME1Po3pJ5nJgmo9WxIPRvmCai19v3Tlz3b6je9pnq2TRXQTVVDe87gFq+nTRlQq2hotRsL323OgFrWkHr2mzag9t6G1PMmNU9tPvOzMt4UxGqbnvxRzjOvQDf7T+9Xq6fE/AG1oktE6nnREgG1ePzqeWaVgFoQgXo2LBRQ23ep+vG/dDqYOawV0M3+JtTzqhUDavvKUM8eiwbUXutDPTutG1D7byXPfmfb0gG1f1t5/MlO83+VwQZfZXAwAREREBEBEREQkZqA8s0845VMzQpEREBEygLyKXYtVfOyAhGpDMgidBWFkypegTR0frUzqv8I09CZlU+nyx5IQ+fUYy69NtEaOptOE6m5H2iDW4UO1/WPuXtAPyhpsDEfAuMCYkouJBIREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQER+QfAXF8Xgm48vAAAAABJRU5ErkJggg==" alt="" class="brand-icon" />
+        <div>
+          <h1>Mi Compra Inteligente</h1>
+          <p id="connectionStatus">Preparando aplicación…</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="installBtn" class="btn btn-primary hidden">Instalar</button>
+        <button id="quickAddBtn" class="btn btn-accent">+ Precio</button>
+      </div>
+    </header>
+
+    <nav class="nav-tabs" aria-label="Navegación principal">
+      <button class="nav-btn active" data-view="dashboard">Inicio</button>
+      <button class="nav-btn" data-view="products">Productos</button>
+      <button class="nav-btn" data-view="prices">Precios</button>
+      <button class="nav-btn" data-view="compare">Comparar</button>
+      <button class="nav-btn" data-view="shopping">Lista</button>
+      <button class="nav-btn" data-view="scanner">Cámara</button>
+      <button class="nav-btn" data-view="settings">Ajustes</button>
+    </nav>
+
+
+    <div id="localModeBanner" class="local-mode-banner hidden">
+      <strong>Vista local activa:</strong>
+      puedes probar y guardar datos en este dispositivo, pero para instalar la PWA debes abrirla desde una dirección HTTPS o desde localhost.
+    </div>
+
+    <main>
+      <section id="view-dashboard" class="view active">
+        <div class="hero-card">
+          <div>
+            <span class="eyebrow">PWA instalable</span>
+            <h2>Compra mejor, compara antes de pagar</h2>
+            <p>Registra precios por tienda, arma tu lista y encuentra automáticamente el menor costo disponible.</p>
+          </div>
+          <button class="btn btn-light" data-open="priceModal">Registrar precio</button>
+        </div>
+
+        <div class="stats-grid">
+          <article class="stat-card"><span>Productos</span><strong id="statProducts">0</strong></article>
+          <article class="stat-card"><span>Tiendas</span><strong id="statStores">0</strong></article>
+          <article class="stat-card"><span>Precios registrados</span><strong id="statPrices">0</strong></article>
+          <article class="stat-card"><span>Por comprar</span><strong id="statPending">0</strong></article>
+        </div>
+
+        <div class="content-grid">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <h3>Mejores precios recientes</h3>
+                <p>El valor más bajo registrado para cada producto.</p>
+              </div>
+            </div>
+            <div id="dashboardBestPrices" class="card-list empty-state">Aún no hay precios registrados.</div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <h3>Lista de compra</h3>
+                <p>Artículos pendientes y costo estimado.</p>
+              </div>
+              <button class="btn btn-secondary btn-sm" data-view-target="shopping">Abrir lista</button>
+            </div>
+            <div id="dashboardShopping" class="card-list empty-state">Tu lista está vacía.</div>
+          </section>
+        </div>
+      </section>
+
+      <section id="view-products" class="view">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">Catálogo</span>
+            <h2>Productos</h2>
+            <p>Clasifica cada artículo por categoría, marca y presentación.</p>
+          </div>
+          <button class="btn btn-primary" data-open="productModal">+ Producto</button>
+        </div>
+        <div class="toolbar">
+          <input id="productSearch" type="search" placeholder="Buscar por nombre, marca o código…" />
+          <select id="productCategoryFilter"><option value="">Todas las categorías</option></select>
+        </div>
+        <div id="productList" class="cards-grid empty-state">No hay productos registrados.</div>
+      </section>
+
+      <section id="view-prices" class="view">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">Historial</span>
+            <h2>Precios por tienda</h2>
+            <p>Guarda cada visita y observa cómo cambian los precios.</p>
+          </div>
+          <button class="btn btn-primary" data-open="priceModal">+ Registrar precio</button>
+        </div>
+        <div class="toolbar">
+          <input id="priceSearch" type="search" placeholder="Buscar producto o tienda…" />
+          <select id="priceStoreFilter"><option value="">Todas las tiendas</option></select>
+        </div>
+        <div id="priceList" class="table-wrap empty-state">No hay precios registrados.</div>
+      </section>
+
+      <section id="view-compare" class="view">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">Ahorro</span>
+            <h2>Comparador</h2>
+            <p>Revisa el menor precio y la diferencia entre tiendas.</p>
+          </div>
+        </div>
+        <div class="toolbar">
+          <input id="compareSearch" type="search" placeholder="Buscar producto…" />
+          <select id="compareCategoryFilter"><option value="">Todas las categorías</option></select>
+        </div>
+        <div id="compareList" class="cards-grid empty-state">Registra precios de un mismo producto en varias tiendas para comparar.</div>
+      </section>
+
+      <section id="view-shopping" class="view">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">Planificador</span>
+            <h2>Lista de compra interactiva</h2>
+            <p>Marca lo comprado; los artículos completados se ocultarán automáticamente.</p>
+          </div>
+          <button class="btn btn-primary" data-open="shoppingModal">+ Añadir artículo</button>
+        </div>
+
+        <div class="shopping-summary">
+          <div><span>Pendientes</span><strong id="shoppingPendingCount">0</strong></div>
+          <div><span>Mejor costo estimado</span><strong id="shoppingBestTotal">$0.00</strong></div>
+          <label class="switch-row">
+            <input id="showCompleted" type="checkbox" />
+            <span>Mostrar comprados</span>
+          </label>
+        </div>
+
+        <div id="shoppingList" class="shopping-list empty-state">Añade productos para crear tu lista.</div>
+
+        <section class="panel top-gap">
+          <div class="panel-header">
+            <div>
+              <h3>Distribución más económica</h3>
+              <p>En qué tienda conviene comprar cada artículo.</p>
+            </div>
+          </div>
+          <div id="shoppingOptimization" class="optimization empty-state">No hay información suficiente.</div>
+        </section>
+      </section>
+
+      <section id="view-scanner" class="view">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">Reconocimiento</span>
+            <h2>Cámara e imagen</h2>
+            <p>Fotografía el producto, detecta su código y completa el registro.</p>
+          </div>
+        </div>
+
+        <div class="scanner-layout">
+          <section class="panel">
+            <div class="camera-box">
+              <video id="cameraVideo" playsinline autoplay muted></video>
+              <canvas id="cameraCanvas" class="hidden"></canvas>
+              <img id="imagePreview" alt="Vista previa" class="hidden" />
+              <div id="cameraPlaceholder" class="camera-placeholder">
+                <strong>Sin imagen</strong>
+                <span>Abre la cámara o selecciona una fotografía.</span>
+              </div>
+            </div>
+            <div class="camera-actions">
+              <button id="startCameraBtn" class="btn btn-primary">Abrir cámara</button>
+              <button id="captureBtn" class="btn btn-secondary" disabled>Capturar</button>
+              <label class="btn btn-secondary file-label">
+                Elegir imagen
+                <input id="imageInput" type="file" accept="image/*" capture="environment" />
+              </label>
+              <button id="analyzeBtn" class="btn btn-accent" disabled>Analizar imagen</button>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header"><div><h3>Resultado detectado</h3><p>Revisa los datos antes de guardarlos.</p></div></div>
+            <div id="scanResult" class="scan-result empty-state">Todavía no se ha analizado ninguna imagen.</div>
+            <button id="createFromScanBtn" class="btn btn-primary full-width hidden">Crear producto con estos datos</button>
+          </section>
+        </div>
+
+        <div class="notice">
+          <strong>Reconocimiento inteligente:</strong>
+          la aplicación usa detección local de códigos de barras cuando el navegador lo permite. También puede conectarse a un servicio de IA visual configurado en Ajustes para reconocer nombre, marca, presentación y categoría.
+        </div>
+      </section>
+
+      <section id="view-settings" class="view">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">Configuración</span>
+            <h2>Ajustes y respaldo</h2>
+            <p>Administra tiendas, categorías, exportaciones e integración de IA.</p>
+          </div>
+        </div>
+
+        <div class="settings-grid">
+          <section class="panel">
+            <div class="panel-header">
+              <div><h3>Tiendas</h3><p>Lugares donde registras precios.</p></div>
+              <button class="btn btn-secondary btn-sm" data-open="storeModal">+ Tienda</button>
+            </div>
+            <div id="storeList" class="mini-list empty-state">No hay tiendas.</div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <div><h3>Categorías</h3><p>Clasificación de los productos.</p></div>
+              <button class="btn btn-secondary btn-sm" data-open="categoryModal">+ Categoría</button>
+            </div>
+            <div id="categoryList" class="mini-list empty-state">No hay categorías.</div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header"><div><h3>IA visual opcional</h3><p>Conecta un endpoint propio y seguro.</p></div></div>
+            <form id="aiSettingsForm" class="stack-form">
+              <label>Endpoint de análisis
+                <input id="aiEndpoint" type="url" placeholder="https://tu-servidor.com/analyze-product" />
+              </label>
+              <small>La PWA enviará la imagen en formato base64 mediante POST y espera un JSON con: name, brand, presentation, category y barcode. No coloques claves privadas directamente en el navegador.</small>
+              <button class="btn btn-primary" type="submit">Guardar configuración</button>
+            </form>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header"><div><h3>Respaldo</h3><p>Exporta o recupera todos tus datos.</p></div></div>
+            <div class="backup-actions">
+              <button id="exportBtn" class="btn btn-secondary">Exportar JSON</button>
+              <label class="btn btn-secondary file-label">
+                Importar JSON
+                <input id="importInput" type="file" accept="application/json" />
+              </label>
+              <button id="clearDataBtn" class="btn btn-danger">Borrar datos</button>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>Mi Compra Inteligente</span>
+      <span>Datos guardados localmente en este dispositivo</span>
+    </footer>
+  </div>
+
+  <dialog id="productModal" class="modal">
+    <form id="productForm" method="dialog">
+      <div class="modal-header">
+        <div><span class="eyebrow">Catálogo</span><h3 id="productModalTitle">Nuevo producto</h3></div>
+        <button class="icon-btn" type="button" data-close="productModal" aria-label="Cerrar">×</button>
+      </div>
+      <input id="productId" type="hidden" />
+      <div class="form-grid">
+        <label>Nombre del producto *
+          <input id="productName" required maxlength="100" placeholder="Ej. Arroz extra" />
+        </label>
+        <label>Marca
+          <input id="productBrand" maxlength="80" placeholder="Ej. Don Juan" />
+        </label>
+        <label>Presentación
+          <input id="productPresentation" maxlength="80" placeholder="Ej. Funda 1 kg" />
+        </label>
+        <label>Categoría *
+          <select id="productCategory" required></select>
+        </label>
+        <label>Código de barras
+          <input id="productBarcode" inputmode="numeric" maxlength="30" />
+        </label>
+        <label>Fotografía
+          <input id="productImage" type="file" accept="image/*" capture="environment" />
+        </label>
+      </div>
+      <img id="productImagePreview" class="form-image-preview hidden" alt="Vista previa del producto" />
+      <div class="modal-actions">
+        <button class="btn btn-secondary" type="button" data-close="productModal">Cancelar</button>
+        <button class="btn btn-primary" type="submit">Guardar producto</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="priceModal" class="modal">
+    <form id="priceForm" method="dialog">
+      <div class="modal-header">
+        <div><span class="eyebrow">Registro</span><h3>Nuevo precio</h3></div>
+        <button class="icon-btn" type="button" data-close="priceModal" aria-label="Cerrar">×</button>
+      </div>
+      <div class="form-grid">
+        <label>Producto *
+          <select id="priceProduct" required></select>
+        </label>
+        <label>Tienda *
+          <select id="priceStore" required></select>
+        </label>
+        <label>Precio *
+          <input id="priceValue" type="number" min="0.01" step="0.01" inputmode="decimal" required placeholder="0.00" />
+        </label>
+        <label>Fecha *
+          <input id="priceDate" type="date" required />
+        </label>
+        <label class="full-field">Nota
+          <input id="priceNote" maxlength="150" placeholder="Ej. Promoción, precio por unidad…" />
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" type="button" data-close="priceModal">Cancelar</button>
+        <button class="btn btn-primary" type="submit">Guardar precio</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="shoppingModal" class="modal">
+    <form id="shoppingForm" method="dialog">
+      <div class="modal-header">
+        <div><span class="eyebrow">Lista</span><h3>Añadir artículo</h3></div>
+        <button class="icon-btn" type="button" data-close="shoppingModal" aria-label="Cerrar">×</button>
+      </div>
+      <div class="form-grid">
+        <label>Producto *
+          <select id="shoppingProduct" required></select>
+        </label>
+        <label>Cantidad *
+          <input id="shoppingQuantity" type="number" min="0.01" step="0.01" value="1" required />
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" type="button" data-close="shoppingModal">Cancelar</button>
+        <button class="btn btn-primary" type="submit">Añadir</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="storeModal" class="modal small-modal">
+    <form id="storeForm" method="dialog">
+      <div class="modal-header">
+        <div><span class="eyebrow">Configuración</span><h3>Nueva tienda</h3></div>
+        <button class="icon-btn" type="button" data-close="storeModal">×</button>
+      </div>
+      <label>Nombre *
+        <input id="storeName" required maxlength="80" placeholder="Ej. Supermercado Central" />
+      </label>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" type="button" data-close="storeModal">Cancelar</button>
+        <button class="btn btn-primary" type="submit">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="categoryModal" class="modal small-modal">
+    <form id="categoryForm" method="dialog">
+      <div class="modal-header">
+        <div><span class="eyebrow">Configuración</span><h3>Nueva categoría</h3></div>
+        <button class="icon-btn" type="button" data-close="categoryModal">×</button>
+      </div>
+      <label>Nombre *
+        <input id="categoryName" required maxlength="80" placeholder="Ej. Congelados" />
+      </label>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" type="button" data-close="categoryModal">Cancelar</button>
+        <button class="btn btn-primary" type="submit">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <script>
+(() => {
+  "use strict";
+
+  const DB_NAME = "mi-compra-inteligente-db";
+  const DB_VERSION = 1;
+  const STORE_NAMES = ["products", "stores", "categories", "prices", "shoppingItems", "settings"];
+
+  let db;
+  let storageBackend = "indexeddb";
+  const memoryStorage = Object.fromEntries(STORE_NAMES.map((name) => [name, []]));
+  let deferredInstallPrompt = null;
+  let currentStream = null;
+  let capturedImageData = "";
+  let scanData = null;
+  let productEditingImage = "";
+
+  const state = {
+    products: [],
+    stores: [],
+    categories: [],
+    prices: [],
+    shoppingItems: [],
+    settings: {}
+  };
+
+  const $ = (selector) => document.querySelector(selector);
+  const $$ = (selector) => [...document.querySelectorAll(selector)];
+
+  function uid(prefix = "id") {
+    return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+  }
+
+  function money(value) {
+    return new Intl.NumberFormat("es-EC", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2
+    }).format(Number(value || 0));
+  }
+
+  function localDate(value) {
+    if (!value) return "—";
+    const d = new Date(`${value}T12:00:00`);
+    return new Intl.DateTimeFormat("es-EC", { dateStyle: "medium" }).format(d);
+  }
+
+  function today() {
+    const d = new Date();
+    const offset = d.getTimezoneOffset();
+    return new Date(d.getTime() - offset * 60000).toISOString().slice(0, 10);
+  }
+
+  function escapeHTML(value = "") {
+    return String(value).replace(/[&<>"']/g, (char) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+    }[char]));
+  }
+
+  function toast(message, type = "") {
+    const el = document.createElement("div");
+    el.className = `toast ${type}`.trim();
+    el.textContent = message;
+    $("#toastContainer").appendChild(el);
+    setTimeout(() => el.remove(), 3200);
+  }
+
+  function confirmAction(message) {
+    return window.confirm(message);
+  }
+
+  function localStorageAvailable() {
+    try {
+      const key = "__mci_test__";
+      localStorage.setItem(key, "1");
+      localStorage.removeItem(key);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function selectFallbackStorage() {
+    storageBackend = localStorageAvailable() ? "localstorage" : "memory";
+  }
+
+  function localKey(storeName) {
+    return `mci_${storeName}`;
+  }
+
+  function readFallbackStore(storeName) {
+    if (storageBackend === "memory") return [...memoryStorage[storeName]];
+    try {
+      return JSON.parse(localStorage.getItem(localKey(storeName)) || "[]");
+    } catch {
+      storageBackend = "memory";
+      return [...memoryStorage[storeName]];
+    }
+  }
+
+  function writeFallbackStore(storeName, rows) {
+    if (storageBackend === "memory") {
+      memoryStorage[storeName] = [...rows];
+      return;
+    }
+    try {
+      localStorage.setItem(localKey(storeName), JSON.stringify(rows));
+    } catch {
+      storageBackend = "memory";
+      memoryStorage[storeName] = [...rows];
+    }
+  }
+
+  function openDB() {
+    return new Promise((resolve) => {
+      if (!("indexedDB" in window)) {
+        selectFallbackStorage();
+        resolve(null);
+        return;
+      }
+
+      let request;
+      try {
+        request = indexedDB.open(DB_NAME, DB_VERSION);
+      } catch {
+        selectFallbackStorage();
+        resolve(null);
+        return;
+      }
+
+      request.onupgradeneeded = () => {
+        const database = request.result;
+        STORE_NAMES.forEach((name) => {
+          if (!database.objectStoreNames.contains(name)) {
+            database.createObjectStore(name, { keyPath: "id" });
+          }
+        });
+      };
+
+      request.onsuccess = () => {
+        storageBackend = "indexeddb";
+        resolve(request.result);
+      };
+      request.onerror = () => {
+        selectFallbackStorage();
+        resolve(null);
+      };
+      request.onblocked = () => {
+        selectFallbackStorage();
+        resolve(null);
+      };
+    });
+  }
+
+  function tx(storeName, mode = "readonly") {
+    return db.transaction(storeName, mode).objectStore(storeName);
+  }
+
+  function getAll(storeName) {
+    if (storageBackend !== "indexeddb") {
+      return Promise.resolve(readFallbackStore(storeName));
+    }
+    return new Promise((resolve, reject) => {
+      const request = tx(storeName).getAll();
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  function put(storeName, value) {
+    if (storageBackend !== "indexeddb") {
+      const rows = readFallbackStore(storeName);
+      const index = rows.findIndex((row) => row.id === value.id);
+      if (index >= 0) rows[index] = value;
+      else rows.push(value);
+      writeFallbackStore(storeName, rows);
+      return Promise.resolve(value);
+    }
+    return new Promise((resolve, reject) => {
+      const request = tx(storeName, "readwrite").put(value);
+      request.onsuccess = () => resolve(value);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  function remove(storeName, id) {
+    if (storageBackend !== "indexeddb") {
+      writeFallbackStore(storeName, readFallbackStore(storeName).filter((row) => row.id !== id));
+      return Promise.resolve();
+    }
+    return new Promise((resolve, reject) => {
+      const request = tx(storeName, "readwrite").delete(id);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  function clearStore(storeName) {
+    if (storageBackend !== "indexeddb") {
+      writeFallbackStore(storeName, []);
+      return Promise.resolve();
+    }
+    return new Promise((resolve, reject) => {
+      const request = tx(storeName, "readwrite").clear();
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async function loadState() {
+    const [products, stores, categories, prices, shoppingItems, settingsRows] =
+      await Promise.all(STORE_NAMES.map(getAll));
+
+    state.products = products;
+    state.stores = stores;
+    state.categories = categories;
+    state.prices = prices;
+    state.shoppingItems = shoppingItems;
+    state.settings = Object.fromEntries(settingsRows.map((row) => [row.id, row.value]));
+  }
+
+  async function seedDefaults() {
+    if (!state.categories.length) {
+      const defaults = ["Alimentos", "Bebidas", "Limpieza", "Higiene personal", "Medicamentos", "Hogar", "Mascotas", "Otros"];
+      for (const name of defaults) await put("categories", { id: uid("cat"), name });
+    }
+    if (!state.stores.length) {
+      for (const name of ["Tienda 1", "Tienda 2"]) await put("stores", { id: uid("store"), name });
+    }
+    await loadState();
+  }
+
+  function getProduct(id) { return state.products.find((x) => x.id === id); }
+  function getStore(id) { return state.stores.find((x) => x.id === id); }
+  function getCategory(id) { return state.categories.find((x) => x.id === id); }
+
+  function getProductPrices(productId) {
+    return state.prices
+      .filter((p) => p.productId === productId)
+      .sort((a, b) => Number(a.price) - Number(b.price) || String(b.date).localeCompare(String(a.date)));
+  }
+
+  function getBestPrice(productId) {
+    return getProductPrices(productId)[0] || null;
+  }
+
+  function latestPricesByStore(productId) {
+    const map = new Map();
+    state.prices
+      .filter((p) => p.productId === productId)
+      .sort((a, b) => String(b.date).localeCompare(String(a.date)) || Number(b.createdAt || 0) - Number(a.createdAt || 0))
+      .forEach((price) => {
+        if (!map.has(price.storeId)) map.set(price.storeId, price);
+      });
+    return [...map.values()].sort((a, b) => Number(a.price) - Number(b.price));
+  }
+
+  function navigate(viewName) {
+    $$(".view").forEach((view) => view.classList.toggle("active", view.id === `view-${viewName}`));
+    $$(".nav-btn").forEach((btn) => btn.classList.toggle("active", btn.dataset.view === viewName));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function optionList(items, placeholder, selected = "") {
+    return `<option value="">${escapeHTML(placeholder)}</option>` +
+      items.map((item) => `<option value="${item.id}" ${item.id === selected ? "selected" : ""}>${escapeHTML(item.name)}</option>`).join("");
+  }
+
+  function refreshSelects() {
+    const sortedCategories = [...state.categories].sort((a, b) => a.name.localeCompare(b.name));
+    const sortedStores = [...state.stores].sort((a, b) => a.name.localeCompare(b.name));
+    const sortedProducts = [...state.products].sort((a, b) => a.name.localeCompare(b.name));
+
+    $("#productCategory").innerHTML = optionList(sortedCategories, "Selecciona una categoría");
+    $("#productCategoryFilter").innerHTML = optionList(sortedCategories, "Todas las categorías");
+    $("#compareCategoryFilter").innerHTML = optionList(sortedCategories, "Todas las categorías");
+    $("#priceStore").innerHTML = optionList(sortedStores, "Selecciona una tienda");
+    $("#priceStoreFilter").innerHTML = optionList(sortedStores, "Todas las tiendas");
+    $("#priceProduct").innerHTML = optionList(sortedProducts, "Selecciona un producto");
+    $("#shoppingProduct").innerHTML = optionList(sortedProducts, "Selecciona un producto");
+  }
+
+  function renderDashboard() {
+    $("#statProducts").textContent = state.products.length;
+    $("#statStores").textContent = state.stores.length;
+    $("#statPrices").textContent = state.prices.length;
+    const pending = state.shoppingItems.filter((x) => !x.completed);
+    $("#statPending").textContent = pending.length;
+
+    const bestRows = state.products
+      .map((product) => ({ product, price: getBestPrice(product.id) }))
+      .filter((row) => row.price)
+      .sort((a, b) => String(b.price.date).localeCompare(String(a.price.date)))
+      .slice(0, 6);
+
+    $("#dashboardBestPrices").className = bestRows.length ? "card-list" : "card-list empty-state";
+    $("#dashboardBestPrices").innerHTML = bestRows.length
+      ? bestRows.map(({ product, price }) => `
+        <div class="list-card">
+          <div>
+            <strong>${escapeHTML(product.name)}</strong>
+            <small>${escapeHTML(getStore(price.storeId)?.name || "Tienda eliminada")} · ${localDate(price.date)}</small>
+          </div>
+          <strong>${money(price.price)}</strong>
+        </div>`).join("")
+      : "Aún no hay precios registrados.";
+
+    $("#dashboardShopping").className = pending.length ? "card-list" : "card-list empty-state";
+    $("#dashboardShopping").innerHTML = pending.length
+      ? pending.slice(0, 6).map((item) => {
+        const product = getProduct(item.productId);
+        const best = product ? getBestPrice(product.id) : null;
+        return `<div class="list-card">
+          <div><strong>${escapeHTML(product?.name || "Producto eliminado")}</strong><small>Cantidad: ${item.quantity}</small></div>
+          <strong>${best ? money(Number(best.price) * Number(item.quantity)) : "Sin precio"}</strong>
+        </div>`;
+      }).join("")
+      : "Tu lista está vacía.";
+  }
+
+  function renderProducts() {
+    const query = $("#productSearch").value.trim().toLowerCase();
+    const categoryId = $("#productCategoryFilter").value;
+    const products = [...state.products]
+      .filter((p) => !categoryId || p.categoryId === categoryId)
+      .filter((p) => [p.name, p.brand, p.presentation, p.barcode].join(" ").toLowerCase().includes(query))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    const container = $("#productList");
+    container.className = products.length ? "cards-grid" : "cards-grid empty-state";
+    container.innerHTML = products.length ? products.map((p) => {
+      const best = getBestPrice(p.id);
+      const image = p.imageData
+        ? `<img class="product-image" src="${p.imageData}" alt="${escapeHTML(p.name)}">`
+        : `<div class="product-image placeholder">${escapeHTML(p.name.slice(0,1).toUpperCase())}</div>`;
+      return `<article class="product-card">
+        ${image}
+        <div class="product-body">
+          <span class="badge">${escapeHTML(getCategory(p.categoryId)?.name || "Sin categoría")}</span>
+          <h3>${escapeHTML(p.name)}</h3>
+          <div class="product-meta">
+            ${p.brand ? `${escapeHTML(p.brand)}<br>` : ""}
+            ${p.presentation ? `${escapeHTML(p.presentation)}<br>` : ""}
+            ${p.barcode ? `Código: ${escapeHTML(p.barcode)}` : "Sin código"}
+          </div>
+          <div class="product-meta" style="margin-top:8px">
+            ${best ? `Mejor precio: <strong>${money(best.price)}</strong> en ${escapeHTML(getStore(best.storeId)?.name || "—")}` : "Sin precios registrados"}
+          </div>
+          <div class="product-actions">
+            <button class="btn btn-secondary btn-sm" data-action="edit-product" data-id="${p.id}">Editar</button>
+            <button class="btn btn-secondary btn-sm" data-action="price-product" data-id="${p.id}">+ Precio</button>
+            <button class="btn btn-danger btn-sm" data-action="delete-product" data-id="${p.id}">Borrar</button>
+          </div>
+        </div>
+      </article>`;
+    }).join("") : "No hay productos que coincidan.";
+  }
+
+  function renderPrices() {
+    const query = $("#priceSearch").value.trim().toLowerCase();
+    const storeId = $("#priceStoreFilter").value;
+    const rows = [...state.prices]
+      .filter((p) => !storeId || p.storeId === storeId)
+      .filter((p) => {
+        const product = getProduct(p.productId)?.name || "";
+        const store = getStore(p.storeId)?.name || "";
+        return `${product} ${store} ${p.note || ""}`.toLowerCase().includes(query);
+      })
+      .sort((a, b) => String(b.date).localeCompare(String(a.date)) || Number(b.createdAt || 0) - Number(a.createdAt || 0));
+
+    const container = $("#priceList");
+    container.className = rows.length ? "table-wrap" : "table-wrap empty-state";
+    container.innerHTML = rows.length ? `
+      <table>
+        <thead><tr><th>Producto</th><th>Tienda</th><th>Precio</th><th>Fecha</th><th>Nota</th><th></th></tr></thead>
+        <tbody>
+          ${rows.map((p) => `<tr>
+            <td><strong>${escapeHTML(getProduct(p.productId)?.name || "Producto eliminado")}</strong></td>
+            <td>${escapeHTML(getStore(p.storeId)?.name || "Tienda eliminada")}</td>
+            <td class="price-main">${money(p.price)}</td>
+            <td>${localDate(p.date)}</td>
+            <td>${escapeHTML(p.note || "—")}</td>
+            <td><button class="btn btn-danger btn-sm" data-action="delete-price" data-id="${p.id}">Borrar</button></td>
+          </tr>`).join("")}
+        </tbody>
+      </table>` : "No hay precios que coincidan.";
+  }
+
+  function renderCompare() {
+    const query = $("#compareSearch").value.trim().toLowerCase();
+    const categoryId = $("#compareCategoryFilter").value;
+
+    const products = state.products
+      .filter((p) => !categoryId || p.categoryId === categoryId)
+      .filter((p) => `${p.name} ${p.brand || ""}`.toLowerCase().includes(query))
+      .map((product) => ({ product, prices: latestPricesByStore(product.id) }))
+      .filter((row) => row.prices.length)
+      .sort((a, b) => a.product.name.localeCompare(b.product.name));
+
+    const container = $("#compareList");
+    container.className = products.length ? "cards-grid" : "cards-grid empty-state";
+    container.innerHTML = products.length ? products.map(({ product, prices }) => {
+      const best = prices[0];
+      const highest = prices[prices.length - 1];
+      const savings = prices.length > 1 ? Number(highest.price) - Number(best.price) : 0;
+      return `<article class="compare-card">
+        <div class="compare-body">
+          <span class="badge">${escapeHTML(getCategory(product.categoryId)?.name || "Sin categoría")}</span>
+          <h3>${escapeHTML(product.name)}</h3>
+          <div class="price-main">${money(best.price)}</div>
+          <div class="product-meta">Mejor precio en ${escapeHTML(getStore(best.storeId)?.name || "—")}</div>
+          ${savings > 0 ? `<p><strong>Ahorro posible: ${money(savings)}</strong></p>` : ""}
+          <div class="compare-lines">
+            ${prices.map((price, i) => `<div class="compare-line">
+              <span>${i === 0 ? "✓ " : ""}${escapeHTML(getStore(price.storeId)?.name || "—")}</span>
+              <strong>${money(price.price)}</strong>
+            </div>`).join("")}
+          </div>
+        </div>
+      </article>`;
+    }).join("") : "Registra precios para comenzar a comparar.";
+  }
+
+  function renderShopping() {
+    const showCompleted = $("#showCompleted").checked;
+    const all = [...state.shoppingItems].sort((a, b) => Number(a.completed) - Number(b.completed) || Number(b.createdAt || 0) - Number(a.createdAt || 0));
+    const visible = showCompleted ? all : all.filter((x) => !x.completed);
+    const pending = all.filter((x) => !x.completed);
+
+    $("#shoppingPendingCount").textContent = pending.length;
+    let total = 0;
+    pending.forEach((item) => {
+      const best = getBestPrice(item.productId);
+      if (best) total += Number(best.price) * Number(item.quantity);
+    });
+    $("#shoppingBestTotal").textContent = money(total);
+
+    const container = $("#shoppingList");
+    container.className = visible.length ? "shopping-list" : "shopping-list empty-state";
+    container.innerHTML = visible.length ? visible.map((item) => {
+      const product = getProduct(item.productId);
+      const best = product ? getBestPrice(product.id) : null;
+      return `<article class="shopping-item ${item.completed ? "completed" : ""}">
+        <button class="check-btn" data-action="toggle-shopping" data-id="${item.id}" aria-label="${item.completed ? "Restaurar" : "Marcar comprado"}">${item.completed ? "✓" : ""}</button>
+        <div>
+          <h4>${escapeHTML(product?.name || "Producto eliminado")}</h4>
+          <p>Cantidad: ${item.quantity} · ${best ? `${money(Number(best.price) * Number(item.quantity))} en ${escapeHTML(getStore(best.storeId)?.name || "—")}` : "Sin precio registrado"}</p>
+        </div>
+        <div class="inline-actions">
+          <button class="btn btn-secondary btn-sm" data-action="change-quantity" data-id="${item.id}">Cantidad</button>
+          <button class="btn btn-danger btn-sm" data-action="delete-shopping" data-id="${item.id}">Borrar</button>
+        </div>
+      </article>`;
+    }).join("") : (showCompleted ? "Tu lista está vacía." : "No hay artículos pendientes.");
+
+    renderOptimization(pending);
+  }
+
+  function renderOptimization(items) {
+    const groups = new Map();
+    let unknown = 0;
+
+    items.forEach((item) => {
+      const product = getProduct(item.productId);
+      const best = product ? getBestPrice(product.id) : null;
+      if (!product || !best) { unknown++; return; }
+      if (!groups.has(best.storeId)) groups.set(best.storeId, []);
+      groups.get(best.storeId).push({
+        name: product.name,
+        quantity: Number(item.quantity),
+        unitPrice: Number(best.price),
+        subtotal: Number(best.price) * Number(item.quantity)
+      });
+    });
+
+    const container = $("#shoppingOptimization");
+    if (!groups.size) {
+      container.className = "optimization empty-state";
+      container.textContent = unknown ? "Hay artículos sin precios registrados." : "No hay información suficiente.";
+      return;
+    }
+
+    container.className = "optimization";
+    container.innerHTML = [...groups.entries()].map(([storeId, rows]) => {
+      const subtotal = rows.reduce((sum, r) => sum + r.subtotal, 0);
+      return `<div class="store-group">
+        <div class="store-group-header">
+          <strong>${escapeHTML(getStore(storeId)?.name || "Tienda eliminada")}</strong>
+          <strong>${money(subtotal)}</strong>
+        </div>
+        <ul>${rows.map((r) => `<li>${escapeHTML(r.name)} × ${r.quantity} — ${money(r.subtotal)}</li>`).join("")}</ul>
+      </div>`;
+    }).join("") + (unknown ? `<div class="notice">${unknown} artículo(s) todavía no tienen precio.</div>` : "");
+  }
+
+  function renderSettings() {
+    const stores = [...state.stores].sort((a, b) => a.name.localeCompare(b.name));
+    const categories = [...state.categories].sort((a, b) => a.name.localeCompare(b.name));
+
+    $("#storeList").className = stores.length ? "mini-list" : "mini-list empty-state";
+    $("#storeList").innerHTML = stores.length ? stores.map((x) => `
+      <div class="mini-item"><span>${escapeHTML(x.name)}</span><button class="btn btn-danger btn-sm" data-action="delete-store" data-id="${x.id}">Borrar</button></div>`).join("") : "No hay tiendas.";
+
+    $("#categoryList").className = categories.length ? "mini-list" : "mini-list empty-state";
+    $("#categoryList").innerHTML = categories.length ? categories.map((x) => `
+      <div class="mini-item"><span>${escapeHTML(x.name)}</span><button class="btn btn-danger btn-sm" data-action="delete-category" data-id="${x.id}">Borrar</button></div>`).join("") : "No hay categorías.";
+
+    $("#aiEndpoint").value = state.settings.aiEndpoint || "";
+  }
+
+  function renderAll() {
+    refreshSelects();
+    renderDashboard();
+    renderProducts();
+    renderPrices();
+    renderCompare();
+    renderShopping();
+    renderSettings();
+  }
+
+  function openModal(id) {
+    if (id === "priceModal") {
+      if (!state.products.length || !state.stores.length) {
+        toast("Primero debes tener al menos un producto y una tienda.", "error");
+        return;
+      }
+      $("#priceDate").value = today();
+      $("#priceForm").reset();
+      $("#priceDate").value = today();
+    }
+    if (id === "productModal") resetProductForm();
+    if (id === "shoppingModal" && !state.products.length) {
+      toast("Primero registra al menos un producto.", "error");
+      return;
+    }
+    document.getElementById(id).showModal();
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).close();
+  }
+
+  function resetProductForm() {
+    $("#productForm").reset();
+    $("#productId").value = "";
+    $("#productModalTitle").textContent = "Nuevo producto";
+    $("#productImagePreview").classList.add("hidden");
+    $("#productImagePreview").src = "";
+    productEditingImage = "";
+  }
+
+  function fileToDataURL(file, maxSize = 1100, quality = 0.78) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = () => { img.src = reader.result; };
+      reader.onerror = reject;
+      img.onload = () => {
+        const ratio = Math.min(1, maxSize / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(img.width * ratio));
+        canvas.height = Math.max(1, Math.round(img.height * ratio));
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleProductSubmit(event) {
+    event.preventDefault();
+    const id = $("#productId").value || uid("product");
+    const imageFile = $("#productImage").files[0];
+    let imageData = productEditingImage;
+    if (imageFile) imageData = await fileToDataURL(imageFile);
+
+    const product = {
+      id,
+      name: $("#productName").value.trim(),
+      brand: $("#productBrand").value.trim(),
+      presentation: $("#productPresentation").value.trim(),
+      categoryId: $("#productCategory").value,
+      barcode: $("#productBarcode").value.trim(),
+      imageData,
+      createdAt: state.products.find((x) => x.id === id)?.createdAt || Date.now(),
+      updatedAt: Date.now()
+    };
+
+    const duplicate = state.products.find((x) =>
+      x.id !== id && product.barcode && x.barcode === product.barcode
+    );
+    if (duplicate) {
+      toast("Ya existe un producto con ese código de barras.", "error");
+      return;
+    }
+
+    await put("products", product);
+    await loadState();
+    renderAll();
+    closeModal("productModal");
+    toast("Producto guardado.", "success");
+  }
+
+  async function handlePriceSubmit(event) {
+    event.preventDefault();
+    const price = {
+      id: uid("price"),
+      productId: $("#priceProduct").value,
+      storeId: $("#priceStore").value,
+      price: Number($("#priceValue").value),
+      date: $("#priceDate").value,
+      note: $("#priceNote").value.trim(),
+      createdAt: Date.now()
+    };
+    await put("prices", price);
+    await loadState();
+    renderAll();
+    closeModal("priceModal");
+    toast("Precio registrado.", "success");
+  }
+
+  async function handleShoppingSubmit(event) {
+    event.preventDefault();
+    const productId = $("#shoppingProduct").value;
+    const existing = state.shoppingItems.find((x) => x.productId === productId && !x.completed);
+    if (existing) {
+      existing.quantity = Number(existing.quantity) + Number($("#shoppingQuantity").value);
+      existing.updatedAt = Date.now();
+      await put("shoppingItems", existing);
+    } else {
+      await put("shoppingItems", {
+        id: uid("shopping"),
+        productId,
+        quantity: Number($("#shoppingQuantity").value),
+        completed: false,
+        createdAt: Date.now()
+      });
+    }
+    await loadState();
+    renderAll();
+    closeModal("shoppingModal");
+    toast("Artículo añadido a la lista.", "success");
+  }
+
+  async function handleStoreSubmit(event) {
+    event.preventDefault();
+    const name = $("#storeName").value.trim();
+    if (state.stores.some((x) => x.name.toLowerCase() === name.toLowerCase())) {
+      toast("Esa tienda ya existe.", "error");
+      return;
+    }
+    await put("stores", { id: uid("store"), name });
+    await loadState();
+    renderAll();
+    event.target.reset();
+    closeModal("storeModal");
+    toast("Tienda guardada.", "success");
+  }
+
+  async function handleCategorySubmit(event) {
+    event.preventDefault();
+    const name = $("#categoryName").value.trim();
+    if (state.categories.some((x) => x.name.toLowerCase() === name.toLowerCase())) {
+      toast("Esa categoría ya existe.", "error");
+      return;
+    }
+    await put("categories", { id: uid("cat"), name });
+    await loadState();
+    renderAll();
+    event.target.reset();
+    closeModal("categoryModal");
+    toast("Categoría guardada.", "success");
+  }
+
+  async function handleDelegatedAction(event) {
+    const btn = event.target.closest("[data-action]");
+    if (!btn) return;
+    const { action, id } = btn.dataset;
+
+    if (action === "edit-product") {
+      const p = getProduct(id);
+      if (!p) return;
+      $("#productId").value = p.id;
+      $("#productName").value = p.name;
+      $("#productBrand").value = p.brand || "";
+      $("#productPresentation").value = p.presentation || "";
+      $("#productCategory").value = p.categoryId || "";
+      $("#productBarcode").value = p.barcode || "";
+      $("#productModalTitle").textContent = "Editar producto";
+      productEditingImage = p.imageData || "";
+      if (productEditingImage) {
+        $("#productImagePreview").src = productEditingImage;
+        $("#productImagePreview").classList.remove("hidden");
+      } else {
+        $("#productImagePreview").classList.add("hidden");
+      }
+      $("#productModal").showModal();
+    }
+
+    if (action === "price-product") {
+      openModal("priceModal");
+      $("#priceProduct").value = id;
+    }
+
+    if (action === "delete-product") {
+      const relatedPrices = state.prices.filter((x) => x.productId === id);
+      const relatedItems = state.shoppingItems.filter((x) => x.productId === id);
+      if (!confirmAction(`Se borrará el producto y también ${relatedPrices.length} precio(s) y ${relatedItems.length} elemento(s) de la lista. ¿Continuar?`)) return;
+      await remove("products", id);
+      for (const p of relatedPrices) await remove("prices", p.id);
+      for (const item of relatedItems) await remove("shoppingItems", item.id);
+    }
+
+    if (action === "delete-price") {
+      if (!confirmAction("¿Borrar este precio?")) return;
+      await remove("prices", id);
+    }
+
+    if (action === "toggle-shopping") {
+      const item = state.shoppingItems.find((x) => x.id === id);
+      if (!item) return;
+      item.completed = !item.completed;
+      item.updatedAt = Date.now();
+      await put("shoppingItems", item);
+    }
+
+    if (action === "change-quantity") {
+      const item = state.shoppingItems.find((x) => x.id === id);
+      if (!item) return;
+      const value = Number(prompt("Nueva cantidad:", item.quantity));
+      if (!Number.isFinite(value) || value <= 0) return;
+      item.quantity = value;
+      item.updatedAt = Date.now();
+      await put("shoppingItems", item);
+    }
+
+    if (action === "delete-shopping") {
+      if (!confirmAction("¿Borrar este artículo de la lista?")) return;
+      await remove("shoppingItems", id);
+    }
+
+    if (action === "delete-store") {
+      const used = state.prices.some((x) => x.storeId === id);
+      if (used) {
+        toast("No puedes borrar una tienda que tiene precios registrados.", "error");
+        return;
+      }
+      if (!confirmAction("¿Borrar esta tienda?")) return;
+      await remove("stores", id);
+    }
+
+    if (action === "delete-category") {
+      const used = state.products.some((x) => x.categoryId === id);
+      if (used) {
+        toast("No puedes borrar una categoría que contiene productos.", "error");
+        return;
+      }
+      if (!confirmAction("¿Borrar esta categoría?")) return;
+      await remove("categories", id);
+    }
+
+    await loadState();
+    renderAll();
+  }
+
+  async function startCamera() {
+    try {
+      stopCamera();
+      currentStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+        audio: false
+      });
+      $("#cameraVideo").srcObject = currentStream;
+      $("#cameraVideo").classList.remove("hidden");
+      $("#imagePreview").classList.add("hidden");
+      $("#cameraPlaceholder").classList.add("hidden");
+      $("#captureBtn").disabled = false;
+      $("#analyzeBtn").disabled = true;
+      capturedImageData = "";
+    } catch (error) {
+      const message = !isSecureAppOrigin()
+        ? "La cámara en vivo requiere HTTPS o localhost. Usa Elegir imagen para tomar una foto desde el teléfono."
+        : "No se pudo abrir la cámara. Revisa los permisos o usa Elegir imagen.";
+      toast(message, "error");
+    }
+  }
+
+  function stopCamera() {
+    if (currentStream) {
+      currentStream.getTracks().forEach((track) => track.stop());
+      currentStream = null;
+    }
+  }
+
+  function captureCameraImage() {
+    const video = $("#cameraVideo");
+    const canvas = $("#cameraCanvas");
+    if (!video.videoWidth) return;
+    const max = 1200;
+    const ratio = Math.min(1, max / Math.max(video.videoWidth, video.videoHeight));
+    canvas.width = Math.round(video.videoWidth * ratio);
+    canvas.height = Math.round(video.videoHeight * ratio);
+    canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+    capturedImageData = canvas.toDataURL("image/jpeg", .82);
+    $("#imagePreview").src = capturedImageData;
+    $("#imagePreview").classList.remove("hidden");
+    $("#cameraVideo").classList.add("hidden");
+    $("#analyzeBtn").disabled = false;
+    stopCamera();
+  }
+
+  async function loadScanImage(file) {
+    capturedImageData = await fileToDataURL(file, 1400, .82);
+    $("#imagePreview").src = capturedImageData;
+    $("#imagePreview").classList.remove("hidden");
+    $("#cameraVideo").classList.add("hidden");
+    $("#cameraPlaceholder").classList.add("hidden");
+    $("#analyzeBtn").disabled = false;
+    stopCamera();
+  }
+
+  async function detectBarcode(dataUrl) {
+    if (!("BarcodeDetector" in window)) return null;
+    try {
+      const detector = new BarcodeDetector({
+        formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "qr_code"]
+      });
+      const img = new Image();
+      img.src = dataUrl;
+      await img.decode();
+      const codes = await detector.detect(img);
+      return codes[0]?.rawValue || null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function analyzeImage() {
+    if (!capturedImageData) return;
+    $("#scanResult").className = "scan-result";
+    $("#scanResult").textContent = "Analizando imagen…";
+    $("#createFromScanBtn").classList.add("hidden");
+
+    let result = {
+      name: "",
+      brand: "",
+      presentation: "",
+      category: "",
+      barcode: await detectBarcode(capturedImageData)
+    };
+
+    if (result.barcode) {
+      const known = state.products.find((p) => p.barcode === result.barcode);
+      if (known) {
+        result = {
+          name: known.name,
+          brand: known.brand || "",
+          presentation: known.presentation || "",
+          category: getCategory(known.categoryId)?.name || "",
+          barcode: result.barcode,
+          existingProductId: known.id
+        };
+      }
+    }
+
+    const endpoint = state.settings.aiEndpoint;
+    if (endpoint && navigator.onLine) {
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: capturedImageData })
+        });
+        if (!response.ok) throw new Error("Error del servicio");
+        const ai = await response.json();
+        result = {
+          ...result,
+          name: ai.name || result.name,
+          brand: ai.brand || result.brand,
+          presentation: ai.presentation || result.presentation,
+          category: ai.category || result.category,
+          barcode: ai.barcode || result.barcode
+        };
+      } catch (error) {
+        toast("El servicio de IA no respondió; se usó el análisis local.", "error");
+      }
+    }
+
+    scanData = { ...result, imageData: capturedImageData };
+    const noData = !result.name && !result.brand && !result.presentation && !result.category && !result.barcode;
+
+    $("#scanResult").innerHTML = noData
+      ? `<div class="notice">No se detectaron datos automáticamente. Puedes crear el producto y completar los campos manualmente.</div>`
+      : `<div class="scan-data">
+          <div><span>Producto</span><strong>${escapeHTML(result.name || "No detectado")}</strong></div>
+          <div><span>Marca</span><strong>${escapeHTML(result.brand || "No detectada")}</strong></div>
+          <div><span>Presentación</span><strong>${escapeHTML(result.presentation || "No detectada")}</strong></div>
+          <div><span>Categoría sugerida</span><strong>${escapeHTML(result.category || "No detectada")}</strong></div>
+          <div><span>Código</span><strong>${escapeHTML(result.barcode || "No detectado")}</strong></div>
+        </div>`;
+
+    if (result.existingProductId) {
+      $("#createFromScanBtn").textContent = "Registrar precio para este producto";
+      $("#createFromScanBtn").dataset.mode = "price";
+    } else {
+      $("#createFromScanBtn").textContent = "Crear producto con estos datos";
+      $("#createFromScanBtn").dataset.mode = "product";
+    }
+    $("#createFromScanBtn").classList.remove("hidden");
+  }
+
+  function createFromScan() {
+    if (!scanData) return;
+    if ($("#createFromScanBtn").dataset.mode === "price" && scanData.existingProductId) {
+      openModal("priceModal");
+      $("#priceProduct").value = scanData.existingProductId;
+      navigate("prices");
+      return;
+    }
+
+    resetProductForm();
+    $("#productName").value = scanData.name || "";
+    $("#productBrand").value = scanData.brand || "";
+    $("#productPresentation").value = scanData.presentation || "";
+    $("#productBarcode").value = scanData.barcode || "";
+    const category = state.categories.find((c) => c.name.toLowerCase() === String(scanData.category || "").toLowerCase());
+    if (category) $("#productCategory").value = category.id;
+    productEditingImage = scanData.imageData || "";
+    if (productEditingImage) {
+      $("#productImagePreview").src = productEditingImage;
+      $("#productImagePreview").classList.remove("hidden");
+    }
+    $("#productModal").showModal();
+  }
+
+  async function saveAISettings(event) {
+    event.preventDefault();
+    await put("settings", { id: "aiEndpoint", value: $("#aiEndpoint").value.trim() });
+    await loadState();
+    toast("Configuración guardada.", "success");
+  }
+
+  function exportData() {
+    const payload = {
+      app: "Mi Compra Inteligente",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      data: {
+        products: state.products,
+        stores: state.stores,
+        categories: state.categories,
+        prices: state.prices,
+        shoppingItems: state.shoppingItems,
+        settings: Object.entries(state.settings).map(([id, value]) => ({ id, value }))
+      }
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `mi-compra-inteligente-${today()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function importData(file) {
+    try {
+      const payload = JSON.parse(await file.text());
+      if (!payload?.data) throw new Error("Formato inválido");
+      if (!confirmAction("La importación reemplazará los datos actuales. ¿Continuar?")) return;
+
+      for (const store of STORE_NAMES) await clearStore(store);
+      for (const name of STORE_NAMES) {
+        const rows = payload.data[name] || [];
+        for (const row of rows) await put(name, row);
+      }
+      await loadState();
+      await seedDefaults();
+      renderAll();
+      toast("Respaldo importado correctamente.", "success");
+    } catch (error) {
+      toast("No se pudo importar el archivo.", "error");
+    }
+  }
+
+  async function clearAllData() {
+    if (!confirmAction("Se borrarán todos los productos, precios y listas de este dispositivo. ¿Continuar?")) return;
+    for (const store of STORE_NAMES) await clearStore(store);
+    await loadState();
+    await seedDefaults();
+    renderAll();
+    toast("Datos borrados.", "success");
+  }
+
+  function isHostedProtocol() {
+    return location.protocol === "http:" || location.protocol === "https:";
+  }
+
+  function isSecureAppOrigin() {
+    return location.protocol === "https:" ||
+      ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname);
+  }
+
+  function updateConnectionStatus() {
+    if (!isHostedProtocol()) {
+      $("#connectionStatus").textContent = `Vista local · guardado ${storageBackend === "memory" ? "temporal" : "activo"}`;
+      $("#localModeBanner").classList.remove("hidden");
+      $("#installBtn").classList.add("hidden");
+      return;
+    }
+
+    $("#localModeBanner").classList.add("hidden");
+    $("#connectionStatus").textContent = navigator.onLine
+      ? "En línea · guardado local activo"
+      : "Sin conexión · modo local activo";
+  }
+
+  function registerServiceWorker() {
+    if ("serviceWorker" in navigator && isSecureAppOrigin()) {
+      navigator.serviceWorker.register("sw.js").catch(() => {
+        toast("No se pudo activar el modo sin conexión.", "error");
+      });
+    }
+  }
+
+  function bindEvents() {
+    $$(".nav-btn").forEach((btn) => btn.addEventListener("click", () => navigate(btn.dataset.view)));
+    $$("[data-view-target]").forEach((btn) => btn.addEventListener("click", () => navigate(btn.dataset.viewTarget)));
+    $$("[data-open]").forEach((btn) => btn.addEventListener("click", () => openModal(btn.dataset.open)));
+    $$("[data-close]").forEach((btn) => btn.addEventListener("click", () => closeModal(btn.dataset.close)));
+
+    $("#quickAddBtn").addEventListener("click", () => openModal("priceModal"));
+    $("#productForm").addEventListener("submit", handleProductSubmit);
+    $("#priceForm").addEventListener("submit", handlePriceSubmit);
+    $("#shoppingForm").addEventListener("submit", handleShoppingSubmit);
+    $("#storeForm").addEventListener("submit", handleStoreSubmit);
+    $("#categoryForm").addEventListener("submit", handleCategorySubmit);
+    $("#aiSettingsForm").addEventListener("submit", saveAISettings);
+
+    document.addEventListener("click", handleDelegatedAction);
+
+    $("#productSearch").addEventListener("input", renderProducts);
+    $("#productCategoryFilter").addEventListener("change", renderProducts);
+    $("#priceSearch").addEventListener("input", renderPrices);
+    $("#priceStoreFilter").addEventListener("change", renderPrices);
+    $("#compareSearch").addEventListener("input", renderCompare);
+    $("#compareCategoryFilter").addEventListener("change", renderCompare);
+    $("#showCompleted").addEventListener("change", renderShopping);
+
+    $("#productImage").addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      productEditingImage = await fileToDataURL(file);
+      $("#productImagePreview").src = productEditingImage;
+      $("#productImagePreview").classList.remove("hidden");
+    });
+
+    $("#startCameraBtn").addEventListener("click", startCamera);
+    $("#captureBtn").addEventListener("click", captureCameraImage);
+    $("#imageInput").addEventListener("change", (e) => e.target.files[0] && loadScanImage(e.target.files[0]));
+    $("#analyzeBtn").addEventListener("click", analyzeImage);
+    $("#createFromScanBtn").addEventListener("click", createFromScan);
+
+    $("#exportBtn").addEventListener("click", exportData);
+    $("#importInput").addEventListener("change", (e) => e.target.files[0] && importData(e.target.files[0]));
+    $("#clearDataBtn").addEventListener("click", clearAllData);
+
+    window.addEventListener("online", updateConnectionStatus);
+    window.addEventListener("offline", updateConnectionStatus);
+    window.addEventListener("beforeinstallprompt", (event) => {
+      if (!isHostedProtocol()) return;
+      event.preventDefault();
+      deferredInstallPrompt = event;
+      $("#installBtn").classList.remove("hidden");
+    });
+    $("#installBtn").addEventListener("click", async () => {
+      if (!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      $("#installBtn").classList.add("hidden");
+    });
+    window.addEventListener("appinstalled", () => toast("Aplicación instalada.", "success"));
+    window.addEventListener("pagehide", stopCamera);
+  }
+
+  async function init() {
+    try {
+      db = await openDB();
+      await loadState();
+      await seedDefaults();
+      bindEvents();
+      renderAll();
+      updateConnectionStatus();
+      registerServiceWorker();
+      $("#priceDate").value = today();
+    } catch (error) {
+      console.error(error);
+      toast("No se pudo iniciar la base de datos local.", "error");
+      $("#connectionStatus").textContent = "Error de almacenamiento";
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
+
+</script>
+</body>
+</html>

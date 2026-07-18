@@ -1,0 +1,31 @@
+MI COMPRA INTELIGENTE — INSTRUCCIONES PARA ANDROID
+
+POR QUÉ SE VEÍA SIN DISEÑO
+El archivo se abrió con una dirección content:// desde el administrador de archivos.
+Android no permitió que index.html cargara correctamente styles.css y app.js.
+
+QUÉ CAMBIÓ EN ESTA VERSIÓN
+- El diseño y la programación principal ahora también están dentro de index.html.
+- Al tocar index.html desde el teléfono, la aplicación debe verse correctamente.
+- Se añadió almacenamiento alternativo para navegadores que bloqueen IndexedDB.
+- La aplicación identifica cuando está abierta como archivo local.
+- El botón Instalar no aparece de forma engañosa en el modo local.
+
+IMPORTANTE
+Abrir index.html desde Archivos sirve para probarla, pero no la convierte en una PWA instalable.
+Para instalarla, el navegador debe abrirla desde:
+- una dirección HTTPS; o
+- http://localhost / http://127.0.0.1 en el mismo dispositivo.
+
+FORMA RECOMENDADA PARA INSTALARLA
+1. Publica el contenido de esta carpeta en un alojamiento estático HTTPS.
+2. Abre la dirección HTTPS en Chrome o Samsung Internet.
+3. Espera unos segundos.
+4. Usa Menú > Instalar aplicación o Añadir a pantalla de inicio.
+5. Después de la primera carga, funcionará sin conexión.
+
+Puedes subir esta carpeta a Netlify, Cloudflare Pages, GitHub Pages o Firebase Hosting.
+
+CÁMARA
+En modo local content://, usa el botón Elegir imagen: Android permitirá tomar una fotografía.
+La cámara en vivo requiere HTTPS o localhost.
