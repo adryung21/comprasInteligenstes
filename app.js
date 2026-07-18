@@ -422,35 +422,77 @@
 
   function renderShopping() {
     const showCompleted = $("#showCompleted").checked;
-    const all = [...state.shoppingItems].sort((a, b) => Number(a.completed) - Number(b.completed) || Number(b.createdAt || 0) - Number(a.createdAt || 0));
+    const all = [...state.shoppingItems].sort((a, b) =>
+      Number(a.completed) - Number(b.completed) ||
+      Number(b.createdAt || 0) - Number(a.createdAt || 0)
+    );
     const visible = showCompleted ? all : all.filter((x) => !x.completed);
+    const completed = all.filter((x) => x.completed);
     const pending = all.filter((x) => !x.completed);
 
-    $("#shoppingPendingCount").textContent = pending.length;
-    let total = 0;
-    pending.forEach((item) => {
+    const totalItems = all.length;
+    const completedItems = completed.length;
+    const progress = totalItems ? Math.round((completedItems / totalItems) * 100) : 0;
+
+    let grandTotal = 0;
+    let collectedTotal = 0;
+    let pendingTotal = 0;
+    let withoutPrice = 0;
+
+    all.forEach((item) => {
       const best = getBestPrice(item.productId);
-      if (best) total += Number(best.price) * Number(item.quantity);
+      if (!best) {
+        withoutPrice++;
+        return;
+      }
+
+      const subtotal = Number(best.price) * Number(item.quantity);
+      grandTotal += subtotal;
+
+      if (item.completed) collectedTotal += subtotal;
+      else pendingTotal += subtotal;
     });
-    $("#shoppingBestTotal").textContent = money(total);
+
+    $("#shoppingProgressPercent").textContent = `${progress}%`;
+    $("#shoppingProgressBar").style.width = `${progress}%`;
+    $("#shoppingCollectedText").textContent =
+      `${completedItems} de ${totalItems} artículo${totalItems === 1 ? "" : "s"} recolectado${completedItems === 1 ? "" : "s"}`;
+    $("#shoppingRemainingText").textContent =
+      `${pending.length} pendiente${pending.length === 1 ? "" : "s"}`;
+
+    $("#shoppingGrandTotal").textContent = money(grandTotal);
+    $("#shoppingCollectedTotal").textContent = money(collectedTotal);
+    $("#shoppingPendingTotal").textContent = money(pendingTotal);
+    $("#shoppingWithoutPriceCount").textContent = withoutPrice;
 
     const container = $("#shoppingList");
     container.className = visible.length ? "shopping-list" : "shopping-list empty-state";
+
     container.innerHTML = visible.length ? visible.map((item) => {
       const product = getProduct(item.productId);
       const best = product ? getBestPrice(product.id) : null;
+      const subtotal = best ? Number(best.price) * Number(item.quantity) : null;
+
       return `<article class="shopping-item ${item.completed ? "completed" : ""}">
-        <button class="check-btn" data-action="toggle-shopping" data-id="${item.id}" aria-label="${item.completed ? "Restaurar" : "Marcar comprado"}">${item.completed ? "✓" : ""}</button>
+        <button class="check-btn" data-action="toggle-shopping" data-id="${item.id}"
+          aria-label="${item.completed ? "Restaurar" : "Marcar comprado"}">${item.completed ? "✓" : ""}</button>
         <div>
           <h4>${escapeHTML(product?.name || "Producto eliminado")}</h4>
-          <p>Cantidad: ${item.quantity} · ${best ? `${money(Number(best.price) * Number(item.quantity))} en ${escapeHTML(getStore(best.storeId)?.name || "—")}` : "Sin precio registrado"}</p>
+          <p>Cantidad: ${item.quantity}${best ? ` · ${escapeHTML(getStore(best.storeId)?.name || "—")}` : " · Sin precio registrado"}</p>
+          <span class="shopping-item-cost">
+            ${subtotal !== null ? `${item.completed ? "Recolectado:" : "Subtotal:"} ${money(subtotal)}` : "Pendiente de precio"}
+          </span>
         </div>
         <div class="inline-actions">
           <button class="btn btn-secondary btn-sm" data-action="change-quantity" data-id="${item.id}">Cantidad</button>
           <button class="btn btn-danger btn-sm" data-action="delete-shopping" data-id="${item.id}">Borrar</button>
         </div>
       </article>`;
-    }).join("") : (showCompleted ? "Tu lista está vacía." : "No hay artículos pendientes.");
+    }).join("") : (
+      totalItems === 0
+        ? "Añade productos para crear tu lista."
+        : "Todos los artículos están recolectados. Activa “Mostrar artículos comprados” para revisarlos."
+    );
 
     renderOptimization(pending);
   }

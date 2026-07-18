@@ -469,3 +469,155 @@ footer {
 .ocr-raw { margin-top:12px; }
 .ocr-raw summary { cursor:pointer; font-weight:800; color:var(--primary); }
 .ocr-raw pre { white-space:pre-wrap; max-height:220px; overflow:auto; background:var(--surface-alt); padding:12px; border-radius:11px; font-size:.76rem; }
+
+
+.purchase-summary-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 24px rgba(23,43,77,.06);
+}
+
+.purchase-summary-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.purchase-summary-top h3 {
+  margin: 4px 0 0;
+  font-size: 1.35rem;
+}
+
+.progress-percent {
+  font-size: 2rem;
+  color: var(--primary);
+}
+
+.purchase-progress {
+  height: 16px;
+  margin-top: 16px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5ebf3;
+  box-shadow: inset 0 1px 3px rgba(16,24,40,.08);
+}
+
+.purchase-progress-bar {
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  transition: width .35s ease;
+}
+
+.purchase-progress-text {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 9px;
+  color: var(--muted);
+  font-size: .88rem;
+}
+
+.purchase-progress-text strong {
+  color: var(--text);
+}
+
+.purchase-totals-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.purchase-total {
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+}
+
+.purchase-total span {
+  display: block;
+  color: var(--muted);
+  font-size: .78rem;
+}
+
+.purchase-total strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 1.15rem;
+}
+
+.purchase-total.total-main {
+  background: #edf4ff;
+  border-color: #c7daf8;
+}
+
+.purchase-total.total-main strong {
+  color: var(--primary-dark);
+  font-size: 1.45rem;
+}
+
+.purchase-summary-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 15px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.shopping-item-cost {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  margin-top: 5px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.shopping-item.completed .shopping-item-cost {
+  color: var(--accent);
+}
+
+@media (max-width: 760px) {
+  .purchase-totals-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+}
+
+@media (max-width: 430px) {
+  .purchase-summary-card {
+    padding: 16px;
+  }
+
+  .purchase-summary-top {
+    align-items: center;
+  }
+
+  .progress-percent {
+    font-size: 1.65rem;
+  }
+
+  .purchase-progress-text {
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .purchase-totals-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .purchase-total {
+    padding: 12px;
+  }
+
+  .purchase-total strong,
+  .purchase-total.total-main strong {
+    font-size: 1.05rem;
+  }
+}

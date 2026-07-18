@@ -481,6 +481,158 @@ footer {
 .ocr-raw summary { cursor:pointer; font-weight:800; color:var(--primary); }
 .ocr-raw pre { white-space:pre-wrap; max-height:220px; overflow:auto; background:var(--surface-alt); padding:12px; border-radius:11px; font-size:.76rem; }
 
+
+.purchase-summary-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 24px rgba(23,43,77,.06);
+}
+
+.purchase-summary-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.purchase-summary-top h3 {
+  margin: 4px 0 0;
+  font-size: 1.35rem;
+}
+
+.progress-percent {
+  font-size: 2rem;
+  color: var(--primary);
+}
+
+.purchase-progress {
+  height: 16px;
+  margin-top: 16px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5ebf3;
+  box-shadow: inset 0 1px 3px rgba(16,24,40,.08);
+}
+
+.purchase-progress-bar {
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  transition: width .35s ease;
+}
+
+.purchase-progress-text {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 9px;
+  color: var(--muted);
+  font-size: .88rem;
+}
+
+.purchase-progress-text strong {
+  color: var(--text);
+}
+
+.purchase-totals-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.purchase-total {
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+}
+
+.purchase-total span {
+  display: block;
+  color: var(--muted);
+  font-size: .78rem;
+}
+
+.purchase-total strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 1.15rem;
+}
+
+.purchase-total.total-main {
+  background: #edf4ff;
+  border-color: #c7daf8;
+}
+
+.purchase-total.total-main strong {
+  color: var(--primary-dark);
+  font-size: 1.45rem;
+}
+
+.purchase-summary-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 15px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.shopping-item-cost {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  margin-top: 5px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.shopping-item.completed .shopping-item-cost {
+  color: var(--accent);
+}
+
+@media (max-width: 760px) {
+  .purchase-totals-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+}
+
+@media (max-width: 430px) {
+  .purchase-summary-card {
+    padding: 16px;
+  }
+
+  .purchase-summary-top {
+    align-items: center;
+  }
+
+  .progress-percent {
+    font-size: 1.65rem;
+  }
+
+  .purchase-progress-text {
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .purchase-totals-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .purchase-total {
+    padding: 12px;
+  }
+
+  .purchase-total strong,
+  .purchase-total.total-main strong {
+    font-size: 1.05rem;
+  }
+}
+
 </style>
   <title>Mi Compra Inteligente</title>
 </head>
@@ -615,14 +767,50 @@ footer {
           <button class="btn btn-primary" data-open="shoppingModal">+ Añadir artículo</button>
         </div>
 
-        <div class="shopping-summary">
-          <div><span>Pendientes</span><strong id="shoppingPendingCount">0</strong></div>
-          <div><span>Mejor costo estimado</span><strong id="shoppingBestTotal">$0.00</strong></div>
-          <label class="switch-row">
-            <input id="showCompleted" type="checkbox" />
-            <span>Mostrar comprados</span>
-          </label>
-        </div>
+        <section class="purchase-summary-card">
+          <div class="purchase-summary-top">
+            <div>
+              <span class="eyebrow">Resumen de compra</span>
+              <h3>Progreso de la lista</h3>
+            </div>
+            <strong id="shoppingProgressPercent" class="progress-percent">0%</strong>
+          </div>
+
+          <div class="purchase-progress" aria-label="Progreso de artículos comprados">
+            <div id="shoppingProgressBar" class="purchase-progress-bar"></div>
+          </div>
+
+          <div class="purchase-progress-text">
+            <strong id="shoppingCollectedText">0 de 0 artículos recolectados</strong>
+            <span id="shoppingRemainingText">0 pendientes</span>
+          </div>
+
+          <div class="purchase-totals-grid">
+            <div class="purchase-total total-main">
+              <span>Total de la compra</span>
+              <strong id="shoppingGrandTotal">$0.00</strong>
+            </div>
+            <div class="purchase-total">
+              <span>Recolectado</span>
+              <strong id="shoppingCollectedTotal">$0.00</strong>
+            </div>
+            <div class="purchase-total">
+              <span>Por comprar</span>
+              <strong id="shoppingPendingTotal">$0.00</strong>
+            </div>
+            <div class="purchase-total">
+              <span>Sin precio</span>
+              <strong id="shoppingWithoutPriceCount">0</strong>
+            </div>
+          </div>
+
+          <div class="purchase-summary-actions">
+            <label class="switch-row">
+              <input id="showCompleted" type="checkbox" />
+              <span>Mostrar artículos comprados</span>
+            </label>
+          </div>
+        </section>
 
         <div id="shoppingList" class="shopping-list empty-state">Añade productos para crear tu lista.</div>
 
@@ -1289,35 +1477,77 @@ footer {
 
   function renderShopping() {
     const showCompleted = $("#showCompleted").checked;
-    const all = [...state.shoppingItems].sort((a, b) => Number(a.completed) - Number(b.completed) || Number(b.createdAt || 0) - Number(a.createdAt || 0));
+    const all = [...state.shoppingItems].sort((a, b) =>
+      Number(a.completed) - Number(b.completed) ||
+      Number(b.createdAt || 0) - Number(a.createdAt || 0)
+    );
     const visible = showCompleted ? all : all.filter((x) => !x.completed);
+    const completed = all.filter((x) => x.completed);
     const pending = all.filter((x) => !x.completed);
 
-    $("#shoppingPendingCount").textContent = pending.length;
-    let total = 0;
-    pending.forEach((item) => {
+    const totalItems = all.length;
+    const completedItems = completed.length;
+    const progress = totalItems ? Math.round((completedItems / totalItems) * 100) : 0;
+
+    let grandTotal = 0;
+    let collectedTotal = 0;
+    let pendingTotal = 0;
+    let withoutPrice = 0;
+
+    all.forEach((item) => {
       const best = getBestPrice(item.productId);
-      if (best) total += Number(best.price) * Number(item.quantity);
+      if (!best) {
+        withoutPrice++;
+        return;
+      }
+
+      const subtotal = Number(best.price) * Number(item.quantity);
+      grandTotal += subtotal;
+
+      if (item.completed) collectedTotal += subtotal;
+      else pendingTotal += subtotal;
     });
-    $("#shoppingBestTotal").textContent = money(total);
+
+    $("#shoppingProgressPercent").textContent = `${progress}%`;
+    $("#shoppingProgressBar").style.width = `${progress}%`;
+    $("#shoppingCollectedText").textContent =
+      `${completedItems} de ${totalItems} artículo${totalItems === 1 ? "" : "s"} recolectado${completedItems === 1 ? "" : "s"}`;
+    $("#shoppingRemainingText").textContent =
+      `${pending.length} pendiente${pending.length === 1 ? "" : "s"}`;
+
+    $("#shoppingGrandTotal").textContent = money(grandTotal);
+    $("#shoppingCollectedTotal").textContent = money(collectedTotal);
+    $("#shoppingPendingTotal").textContent = money(pendingTotal);
+    $("#shoppingWithoutPriceCount").textContent = withoutPrice;
 
     const container = $("#shoppingList");
     container.className = visible.length ? "shopping-list" : "shopping-list empty-state";
+
     container.innerHTML = visible.length ? visible.map((item) => {
       const product = getProduct(item.productId);
       const best = product ? getBestPrice(product.id) : null;
+      const subtotal = best ? Number(best.price) * Number(item.quantity) : null;
+
       return `<article class="shopping-item ${item.completed ? "completed" : ""}">
-        <button class="check-btn" data-action="toggle-shopping" data-id="${item.id}" aria-label="${item.completed ? "Restaurar" : "Marcar comprado"}">${item.completed ? "✓" : ""}</button>
+        <button class="check-btn" data-action="toggle-shopping" data-id="${item.id}"
+          aria-label="${item.completed ? "Restaurar" : "Marcar comprado"}">${item.completed ? "✓" : ""}</button>
         <div>
           <h4>${escapeHTML(product?.name || "Producto eliminado")}</h4>
-          <p>Cantidad: ${item.quantity} · ${best ? `${money(Number(best.price) * Number(item.quantity))} en ${escapeHTML(getStore(best.storeId)?.name || "—")}` : "Sin precio registrado"}</p>
+          <p>Cantidad: ${item.quantity}${best ? ` · ${escapeHTML(getStore(best.storeId)?.name || "—")}` : " · Sin precio registrado"}</p>
+          <span class="shopping-item-cost">
+            ${subtotal !== null ? `${item.completed ? "Recolectado:" : "Subtotal:"} ${money(subtotal)}` : "Pendiente de precio"}
+          </span>
         </div>
         <div class="inline-actions">
           <button class="btn btn-secondary btn-sm" data-action="change-quantity" data-id="${item.id}">Cantidad</button>
           <button class="btn btn-danger btn-sm" data-action="delete-shopping" data-id="${item.id}">Borrar</button>
         </div>
       </article>`;
-    }).join("") : (showCompleted ? "Tu lista está vacía." : "No hay artículos pendientes.");
+    }).join("") : (
+      totalItems === 0
+        ? "Añade productos para crear tu lista."
+        : "Todos los artículos están recolectados. Activa “Mostrar artículos comprados” para revisarlos."
+    );
 
     renderOptimization(pending);
   }

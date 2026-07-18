@@ -1,3 +1,14 @@
+# Mi Compra Inteligente — PWA v1.3 Lista de compra
+
+Novedades:
+- Barra de progreso de artículos recolectados.
+- Porcentaje comprado, por ejemplo: 5 de 10 = 50%.
+- Total general estimado de toda la lista.
+- Total recolectado.
+- Total pendiente por comprar.
+- Conteo de artículos sin precio registrado.
+- Subtotal visible en cada artículo.
+
 # Mi Compra Inteligente — PWA v1.2 OCR
 
 Esta versión incorpora OCR real en el navegador con Tesseract.js. En Cámara: toma o elige una foto, pulsa **Analizar imagen**, revisa el nombre, marca, presentación, categoría y código sugeridos, y pulsa **Crear producto nuevo**.
