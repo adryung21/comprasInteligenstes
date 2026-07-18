@@ -458,3 +458,14 @@ footer {
   line-height: 1.45;
   box-shadow: 0 5px 16px rgba(55, 42, 0, .06);
 }
+
+.ocr-progress { margin-bottom: 15px; }
+.ocr-progress-header { display:flex; justify-content:space-between; gap:12px; margin-bottom:7px; color:var(--muted); font-size:.84rem; }
+.ocr-progress-track { height:10px; overflow:hidden; border-radius:999px; background:#e7edf5; }
+.ocr-progress-bar { width:0; height:100%; background:var(--primary); transition:width .2s ease; }
+.ocr-fields { display:grid; gap:11px; }
+.ocr-fields label { display:grid; gap:6px; font-size:.82rem; font-weight:800; color:var(--muted); }
+.ocr-fields input, .ocr-fields select { color:var(--text); font-weight:600; }
+.ocr-raw { margin-top:12px; }
+.ocr-raw summary { cursor:pointer; font-weight:800; color:var(--primary); }
+.ocr-raw pre { white-space:pre-wrap; max-height:220px; overflow:auto; background:var(--surface-alt); padding:12px; border-radius:11px; font-size:.76rem; }

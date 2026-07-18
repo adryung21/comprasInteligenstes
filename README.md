@@ -1,3 +1,9 @@
+# Mi Compra Inteligente — PWA v1.2 OCR
+
+Esta versión incorpora OCR real en el navegador con Tesseract.js. En Cámara: toma o elige una foto, pulsa **Analizar imagen**, revisa el nombre, marca, presentación, categoría y código sugeridos, y pulsa **Crear producto nuevo**.
+
+La primera lectura requiere conexión para descargar el motor y los modelos español/inglés. Para mejores resultados, fotografía la etiqueta de frente, con buena iluminación, sin reflejos y ocupando la mayor parte de la imagen.
+
 # Mi Compra Inteligente — PWA v1.1
 
 ## Corrección para Android

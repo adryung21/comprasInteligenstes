@@ -836,78 +836,154 @@
     }
   }
 
+  function setOCRProgress(message, progress = 0) {
+    $("#ocrProgressWrap").classList.remove("hidden");
+    $("#ocrProgressText").textContent = message;
+    const pct = Math.max(0, Math.min(100, Math.round(progress * 100)));
+    $("#ocrProgressPercent").textContent = `${pct}%`;
+    $("#ocrProgressBar").style.width = `${pct}%`;
+  }
+
+  function inferCategory(text) {
+    const t = text.toLowerCase();
+    const rules = [
+      ["Bebidas", ["agua","jugo","bebida","gaseosa","leche","café","cafe","té","te","refresco"]],
+      ["Limpieza", ["detergente","cloro","desinfectante","lavavajilla","suavizante","limpiador"]],
+      ["Higiene personal", ["shampoo","champú","jabon","jabón","crema dental","desodorante","pañal","toalla sanitaria"]],
+      ["Medicamentos", ["tabletas","capsulas","cápsulas","jarabe","ibuprofeno","paracetamol"]],
+      ["Mascotas", ["perro","gato","mascota","croquetas"]],
+      ["Hogar", ["papel aluminio","servilleta","bolsa","foco","esponja"]],
+      ["Alimentos", ["arroz","azucar","azúcar","sal","harina","aceite","galleta","cereal","yogur","atún","atun","pasta","salsa"]]
+    ];
+    return rules.find(([, words]) => words.some(w => t.includes(w)))?.[0] || "Otros";
+  }
+
+  function extractProductData(ocr) {
+    const rawText = String(ocr.text || "").replace(/\r/g, "");
+    const sourceLines = ocr.lines?.length
+      ? ocr.lines.map(x => ({text:x.text, confidence:x.confidence || 0}))
+      : rawText.split("\n").map(text => ({text, confidence:50}));
+    const noise = /(informaci[oó]n|nutricional|ingredientes|contenido neto|elaborado|registro sanitario|lote|vence|conservar|distribuido|servicio al cliente|c[oó]digo|www\.|precio|calor[ií]as)/i;
+    const candidates = sourceLines
+      .map((x,index) => ({...x,index,text:x.text.replace(/[|_~]/g," ").replace(/\s+/g," ").trim()}))
+      .filter(x => {
+        const letters = (x.text.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g)||[]).length;
+        return x.text.length >= 3 && x.text.length <= 70 && letters >= 3 &&
+          !noise.test(x.text) && !/^\d[\d\s.,%-]*$/.test(x.text);
+      })
+      .map(x => {
+        const words = x.text.split(" ").length;
+        const letters = (x.text.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g)||[]).length;
+        const upper = (x.text.match(/[A-ZÁÉÍÓÚÜÑ]/g)||[]).length / Math.max(1, letters);
+        let score = x.confidence + Math.max(0,35-x.index*3) + upper*18;
+        if (words >= 2 && words <= 6) score += 18;
+        if (x.text.length >= 5 && x.text.length <= 40) score += 12;
+        return {...x,score};
+      }).sort((a,b)=>b.score-a.score);
+
+    const presentation = rawText.match(/\b\d+(?:[.,]\d+)?\s?(?:kg|g|gr|mg|l|lt|ml|cc|oz|unidades?|und)\b/i)?.[0] || "";
+    const barcode = rawText.replace(/\s/g,"").match(/\b\d{8,14}\b/)?.[0] || "";
+    const first = candidates[0]?.text || "";
+    const second = candidates.find(x => x.text !== first)?.text || "";
+    let brand = "";
+    let name = first;
+    if (first && second && first.split(" ").length <= 2 && first.length <= 22) {
+      brand = first;
+      name = second;
+    }
+    name = name.replace(/\b\d+(?:[.,]\d+)?\s?(?:kg|g|gr|mg|l|lt|ml|cc|oz)\b/ig,"").trim();
+    return {name,brand,presentation,category:inferCategory(rawText),barcode,rawText};
+  }
+
+  async function runLocalOCR(imageData) {
+    if (!window.Tesseract) throw new Error("No se pudo cargar el motor OCR. Verifica la conexión.");
+    const worker = await Tesseract.createWorker("spa+eng", 1, {
+      logger: m => {
+        const labels = {
+          "loading tesseract core":"Cargando motor OCR",
+          "initializing tesseract":"Inicializando OCR",
+          "loading language traineddata":"Descargando idioma",
+          "initializing api":"Preparando reconocimiento",
+          "recognizing text":"Leyendo texto de la etiqueta"
+        };
+        setOCRProgress(labels[m.status] || "Analizando imagen", Number(m.progress || 0));
+      }
+    });
+    try {
+      return (await worker.recognize(imageData)).data;
+    } finally {
+      await worker.terminate();
+    }
+  }
+
+  function renderOCRResult(result) {
+    const categories = [...state.categories].sort((a,b)=>a.name.localeCompare(b.name));
+    const selected = categories.find(c => c.name.toLowerCase() === String(result.category||"").toLowerCase())?.id || "";
+    $("#scanResult").className = "scan-result";
+    $("#scanResult").innerHTML = `
+      <div class="ocr-fields">
+        <label>Nombre del producto detectado *
+          <input id="ocrName" value="${escapeHTML(result.name || "")}" placeholder="Corrige o escribe el nombre">
+        </label>
+        <label>Marca
+          <input id="ocrBrand" value="${escapeHTML(result.brand || "")}" placeholder="Marca detectada">
+        </label>
+        <label>Presentación
+          <input id="ocrPresentation" value="${escapeHTML(result.presentation || "")}" placeholder="Ej. 500 g">
+        </label>
+        <label>Categoría
+          <select id="ocrCategory">${optionList(categories,"Selecciona una categoría",selected)}</select>
+        </label>
+        <label>Código de barras
+          <input id="ocrBarcode" value="${escapeHTML(result.barcode || "")}" inputmode="numeric">
+        </label>
+      </div>
+      <details class="ocr-raw"><summary>Ver texto completo detectado</summary><pre>${escapeHTML(result.rawText || "No se detectó texto.")}</pre></details>`;
+  }
+
   async function analyzeImage() {
     if (!capturedImageData) return;
-    $("#scanResult").className = "scan-result";
-    $("#scanResult").textContent = "Analizando imagen…";
+    $("#analyzeBtn").disabled = true;
     $("#createFromScanBtn").classList.add("hidden");
-
-    let result = {
-      name: "",
-      brand: "",
-      presentation: "",
-      category: "",
-      barcode: await detectBarcode(capturedImageData)
-    };
-
-    if (result.barcode) {
-      const known = state.products.find((p) => p.barcode === result.barcode);
+    $("#scanResult").className = "scan-result";
+    $("#scanResult").textContent = "Preparando reconocimiento de texto…";
+    setOCRProgress("Preparando OCR",0);
+    try {
+      const barcode = await detectBarcode(capturedImageData);
+      const known = barcode && state.products.find(p => p.barcode === barcode);
       if (known) {
-        result = {
-          name: known.name,
-          brand: known.brand || "",
-          presentation: known.presentation || "",
-          category: getCategory(known.categoryId)?.name || "",
-          barcode: result.barcode,
-          existingProductId: known.id
-        };
+        scanData = {name:known.name,brand:known.brand||"",presentation:known.presentation||"",
+          category:getCategory(known.categoryId)?.name||"",barcode,existingProductId:known.id,
+          rawText:"Producto identificado por código de barras.",imageData:capturedImageData};
+      } else {
+        const extracted = extractProductData(await runLocalOCR(capturedImageData));
+        scanData = {...extracted,barcode:barcode||extracted.barcode,imageData:capturedImageData};
       }
-    }
-
-    const endpoint = state.settings.aiEndpoint;
-    if (endpoint && navigator.onLine) {
-      try {
-        const response = await fetch(endpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ image: capturedImageData })
-        });
-        if (!response.ok) throw new Error("Error del servicio");
-        const ai = await response.json();
-        result = {
-          ...result,
-          name: ai.name || result.name,
-          brand: ai.brand || result.brand,
-          presentation: ai.presentation || result.presentation,
-          category: ai.category || result.category,
-          barcode: ai.barcode || result.barcode
-        };
-      } catch (error) {
-        toast("El servicio de IA no respondió; se usó el análisis local.", "error");
+      const endpoint = state.settings.aiEndpoint;
+      if (endpoint && navigator.onLine && !scanData.existingProductId) {
+        try {
+          const response = await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({image:capturedImageData,ocrText:scanData.rawText})});
+          if (response.ok) {
+            const ai = await response.json();
+            scanData = {...scanData,name:ai.name||scanData.name,brand:ai.brand||scanData.brand,
+              presentation:ai.presentation||scanData.presentation,category:ai.category||scanData.category,
+              barcode:ai.barcode||scanData.barcode};
+          }
+        } catch {}
       }
+      setOCRProgress("Análisis completado",1);
+      renderOCRResult(scanData);
+      $("#createFromScanBtn").textContent = scanData.existingProductId ? "Registrar precio para este producto" : "Crear producto nuevo";
+      $("#createFromScanBtn").dataset.mode = scanData.existingProductId ? "price" : "product";
+      $("#createFromScanBtn").classList.remove("hidden");
+    } catch (error) {
+      $("#scanResult").innerHTML = `<div class="notice"><strong>No se pudo completar el OCR.</strong><br>${escapeHTML(error.message || "Intenta con una foto más cercana y bien iluminada.")}</div>`;
+      toast("No se pudo leer el texto de la imagen.","error");
+    } finally {
+      $("#analyzeBtn").disabled = false;
+      setTimeout(()=>$("#ocrProgressWrap").classList.add("hidden"),1300);
     }
-
-    scanData = { ...result, imageData: capturedImageData };
-    const noData = !result.name && !result.brand && !result.presentation && !result.category && !result.barcode;
-
-    $("#scanResult").innerHTML = noData
-      ? `<div class="notice">No se detectaron datos automáticamente. Puedes crear el producto y completar los campos manualmente.</div>`
-      : `<div class="scan-data">
-          <div><span>Producto</span><strong>${escapeHTML(result.name || "No detectado")}</strong></div>
-          <div><span>Marca</span><strong>${escapeHTML(result.brand || "No detectada")}</strong></div>
-          <div><span>Presentación</span><strong>${escapeHTML(result.presentation || "No detectada")}</strong></div>
-          <div><span>Categoría sugerida</span><strong>${escapeHTML(result.category || "No detectada")}</strong></div>
-          <div><span>Código</span><strong>${escapeHTML(result.barcode || "No detectado")}</strong></div>
-        </div>`;
-
-    if (result.existingProductId) {
-      $("#createFromScanBtn").textContent = "Registrar precio para este producto";
-      $("#createFromScanBtn").dataset.mode = "price";
-    } else {
-      $("#createFromScanBtn").textContent = "Crear producto con estos datos";
-      $("#createFromScanBtn").dataset.mode = "product";
-    }
-    $("#createFromScanBtn").classList.remove("hidden");
   }
 
   function createFromScan() {
@@ -918,14 +994,18 @@
       navigate("prices");
       return;
     }
-
+    const name = $("#ocrName")?.value.trim() || scanData.name || "";
+    if (!name) {
+      toast("Confirma o escribe el nombre del producto.","error");
+      $("#ocrName")?.focus();
+      return;
+    }
     resetProductForm();
-    $("#productName").value = scanData.name || "";
-    $("#productBrand").value = scanData.brand || "";
-    $("#productPresentation").value = scanData.presentation || "";
-    $("#productBarcode").value = scanData.barcode || "";
-    const category = state.categories.find((c) => c.name.toLowerCase() === String(scanData.category || "").toLowerCase());
-    if (category) $("#productCategory").value = category.id;
+    $("#productName").value = name;
+    $("#productBrand").value = $("#ocrBrand")?.value.trim() || "";
+    $("#productPresentation").value = $("#ocrPresentation")?.value.trim() || "";
+    $("#productBarcode").value = $("#ocrBarcode")?.value.trim() || "";
+    $("#productCategory").value = $("#ocrCategory")?.value || "";
     productEditingImage = scanData.imageData || "";
     if (productEditingImage) {
       $("#productImagePreview").src = productEditingImage;
