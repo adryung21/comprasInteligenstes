@@ -348,6 +348,7 @@
           <div class="product-actions">
             <button class="btn btn-secondary btn-sm" data-action="edit-product" data-id="${p.id}">Editar</button>
             <button class="btn btn-secondary btn-sm" data-action="price-product" data-id="${p.id}">+ Precio</button>
+            <button class="btn btn-accent btn-sm" data-action="add-product-list" data-id="${p.id}">+ Lista</button>
             <button class="btn btn-danger btn-sm" data-action="delete-product" data-id="${p.id}">Borrar</button>
           </div>
         </div>
@@ -559,21 +560,52 @@
     renderSettings();
   }
 
-  function openModal(id) {
+  function configurePriceProduct(productId = "") {
+    const select = $("#priceProduct");
+    const selectField = $("#priceProductSelectField");
+    const lockedField = $("#priceProductLockedField");
+    const lockedName = $("#priceProductLockedName");
+    const product = productId ? getProduct(productId) : null;
+
+    select.dataset.lockedId = "";
+
+    if (product) {
+      select.value = product.id;
+      select.disabled = true;
+      select.removeAttribute("required");
+      selectField.classList.add("hidden");
+      lockedName.textContent = product.name;
+      lockedField.classList.remove("hidden");
+      select.dataset.lockedId = product.id;
+    } else {
+      select.disabled = false;
+      select.required = true;
+      select.value = "";
+      selectField.classList.remove("hidden");
+      lockedField.classList.add("hidden");
+      lockedName.textContent = "—";
+    }
+  }
+
+  function openModal(id, options = {}) {
     if (id === "priceModal") {
       if (!state.products.length || !state.stores.length) {
         toast("Primero debes tener al menos un producto y una tienda.", "error");
         return;
       }
-      $("#priceDate").value = today();
+
       $("#priceForm").reset();
       $("#priceDate").value = today();
+      configurePriceProduct(options.productId || "");
     }
+
     if (id === "productModal") resetProductForm();
+
     if (id === "shoppingModal" && !state.products.length) {
       toast("Primero registra al menos un producto.", "error");
       return;
     }
+
     document.getElementById(id).showModal();
   }
 
@@ -646,43 +678,73 @@
 
   async function handlePriceSubmit(event) {
     event.preventDefault();
+
+    const productId = $("#priceProduct").dataset.lockedId || $("#priceProduct").value;
+    const product = getProduct(productId);
+
+    if (!product) {
+      toast("Selecciona un producto válido.", "error");
+      return;
+    }
+
     const price = {
       id: uid("price"),
-      productId: $("#priceProduct").value,
+      productId,
       storeId: $("#priceStore").value,
       price: Number($("#priceValue").value),
       date: $("#priceDate").value,
       note: $("#priceNote").value.trim(),
       createdAt: Date.now()
     };
+
     await put("prices", price);
     await loadState();
     renderAll();
     closeModal("priceModal");
-    toast("Precio registrado.", "success");
+    toast(`Precio de ${product.name} registrado.`, "success");
+  }
+
+  async function addProductToShoppingList(productId, quantity = 1) {
+    const amount = Number(quantity);
+    const existing = state.shoppingItems.find(
+      (item) => item.productId === productId && !item.completed
+    );
+
+    if (existing) {
+      existing.quantity = Number(existing.quantity) + amount;
+      existing.updatedAt = Date.now();
+      await put("shoppingItems", existing);
+      return { item: existing, increased: true };
+    }
+
+    const item = {
+      id: uid("shopping"),
+      productId,
+      quantity: amount,
+      completed: false,
+      createdAt: Date.now()
+    };
+
+    await put("shoppingItems", item);
+    return { item, increased: false };
   }
 
   async function handleShoppingSubmit(event) {
     event.preventDefault();
+
     const productId = $("#shoppingProduct").value;
-    const existing = state.shoppingItems.find((x) => x.productId === productId && !x.completed);
-    if (existing) {
-      existing.quantity = Number(existing.quantity) + Number($("#shoppingQuantity").value);
-      existing.updatedAt = Date.now();
-      await put("shoppingItems", existing);
-    } else {
-      await put("shoppingItems", {
-        id: uid("shopping"),
-        productId,
-        quantity: Number($("#shoppingQuantity").value),
-        completed: false,
-        createdAt: Date.now()
-      });
+    const product = getProduct(productId);
+
+    if (!product) {
+      toast("Selecciona un producto válido.", "error");
+      return;
     }
+
+    await addProductToShoppingList(productId, $("#shoppingQuantity").value);
     await loadState();
     renderAll();
     closeModal("shoppingModal");
-    toast("Artículo añadido a la lista.", "success");
+    toast(`${product.name} añadido a la lista.`, "success");
   }
 
   async function handleStoreSubmit(event) {
@@ -741,8 +803,20 @@
     }
 
     if (action === "price-product") {
-      openModal("priceModal");
-      $("#priceProduct").value = id;
+      openModal("priceModal", { productId: id });
+    }
+
+    if (action === "add-product-list") {
+      const product = getProduct(id);
+      if (!product) return;
+
+      const result = await addProductToShoppingList(id, 1);
+      toast(
+        result.increased
+          ? `${product.name}: cantidad aumentada en la lista.`
+          : `${product.name} añadido a la lista.`,
+        "success"
+      );
     }
 
     if (action === "delete-product") {
@@ -1031,8 +1105,7 @@
   function createFromScan() {
     if (!scanData) return;
     if ($("#createFromScanBtn").dataset.mode === "price" && scanData.existingProductId) {
-      openModal("priceModal");
-      $("#priceProduct").value = scanData.existingProductId;
+      openModal("priceModal", { productId: scanData.existingProductId });
       navigate("prices");
       return;
     }

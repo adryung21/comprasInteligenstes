@@ -1,4 +1,4 @@
-const CACHE_NAME = "mi-compra-inteligente-v1-3-lista";
+const CACHE_NAME = "mi-compra-inteligente-v1-4-productos";
 const APP_ASSETS = [
   "./",
   "./index.html",

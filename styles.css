@@ -621,3 +621,46 @@ footer {
     font-size: 1.05rem;
   }
 }
+
+
+.locked-product-field {
+  min-height: 44px;
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid #bcd2f5;
+  border-radius: 12px;
+  background: #edf4ff;
+}
+
+.locked-product-field span {
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.locked-product-field strong {
+  color: var(--primary-dark);
+  font-size: 1.05rem;
+}
+
+.locked-product-field small {
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.product-actions .btn-accent {
+  border-color: var(--accent);
+}
+
+@media (max-width: 430px) {
+  .product-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .product-actions .btn {
+    width: 100%;
+  }
+}

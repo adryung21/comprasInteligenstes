@@ -1,3 +1,14 @@
+# Mi Compra Inteligente — PWA v1.4 Productos
+
+Novedades:
+- Al pulsar **+ Precio** dentro de una tarjeta, el producto queda seleccionado y bloqueado automáticamente.
+- Ya no es necesario volver a elegir el producto en el formulario.
+- El botón general **+ Precio** mantiene el selector para registrar precios de cualquier producto.
+- Cada tarjeta incluye **+ Lista**.
+- **+ Lista** añade una unidad directamente.
+- Si el producto ya está pendiente, aumenta su cantidad en una unidad sin duplicarlo.
+- El flujo desde Cámara también abre el precio vinculado al producto reconocido.
+
 # Mi Compra Inteligente — PWA v1.3 Lista de compra
 
 Novedades:
