@@ -1,21 +1,14 @@
-# Mi Compra Inteligente v2.0
+# Mi Compra Inteligente v2.0.1
 
-Primera fase Firebase del rediseño.
+Corrección de mantenimiento para los campos de fecha de Firebase.
 
-## Incluye
+## Cambios
 
-- Inicio de sesión con Google.
-- Correo y contraseña.
-- Recuperación de contraseña.
-- Administrador inicial: `adrian90.2y@gmail.com`.
-- Migración segura de IndexedDB.
-- Respaldo JSON antes de migrar.
-- Catálogo Firebase.
-- Sincronización básica de listas, historial y precios.
-- Fotografías únicamente locales.
-- Prevención reforzada de duplicados.
+- Conserva correctamente `serverTimestamp()` y los objetos especiales de Firestore.
+- Detecta documentos migrados donde la fecha quedó como un mapa `_methodName`.
+- Repara automáticamente categorías, tiendas, productos, precios, usuario y subcolecciones privadas.
+- Registra el mantenimiento en `users/{uid}/maintenance/timestampRepairV201`.
+- Ejecuta la reparación una sola vez por dispositivo.
+- No repite la migración ni modifica fotografías locales.
 
-## Próxima fase
-
-La v2.1 incorporará el panel administrativo de propuestas, aprobación/rechazo,
-alertas de cambio de precio y envío manual de precios para verificación.
+La siguiente fase funcional continúa siendo la v2.1 administrativa.

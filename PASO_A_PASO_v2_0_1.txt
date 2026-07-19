@@ -1,0 +1,32 @@
+MI COMPRA INTELIGENTE — CORRECCIÓN v2.0.1
+
+OBJETIVO
+Reparar automáticamente los campos de fecha que Firestore mostró como:
+_methodName: "serverTimestamp"
+
+LA CORRECCIÓN
+- No borra productos.
+- No borra precios.
+- No duplica registros.
+- No repite la migración completa.
+- No elimina IndexedDB.
+- No sube fotografías.
+- Solo corrige campos de fecha defectuosos.
+- Evita que vuelva a ocurrir en registros nuevos.
+
+ACTUALIZAR GITHUB
+1. Descomprime el ZIP de corrección rápida.
+2. Abre el repositorio comprasInteligenstes.
+3. Add file → Upload files.
+4. Sube los archivos y reemplaza los anteriores.
+5. Pulsa Commit changes.
+6. Abre:
+   https://adryung21.github.io/comprasInteligenstes/?v=201
+7. Inicia sesión como administrador.
+8. Espera el mensaje de reparación automática.
+
+NO ES NECESARIO
+- No cambies Firestore Rules.
+- No pulses Migrar nuevamente.
+- No borres colecciones.
+- No borres la caché antes de probar.

@@ -1496,6 +1496,60 @@
     }
   }
 
+  function timestampRepairKey(uid) {
+    return `firebaseTimestampRepairV201_${uid}`;
+  }
+
+  async function repairFirebaseDatesIfNeeded() {
+    if (
+      !firebaseBridge?.currentUser ||
+      firebaseProfile?.role !== "admin"
+    ) {
+      return;
+    }
+
+    const key = timestampRepairKey(firebaseUser.uid);
+    if (state.settings[key]?.completed) return;
+
+    const badge = $("#cloudStatusBadge");
+    if (badge) {
+      badge.textContent = "Reparando fechas…";
+      badge.className = "cloud-status-badge";
+    }
+
+    try {
+      const result = await firebaseBridge.repairCloudTimestamps();
+
+      cloudSyncPaused = true;
+      await put("settings", {
+        id: key,
+        value: {
+          completed: true,
+          completedAt: new Date().toISOString(),
+          repairedDocuments: result.repairedDocuments
+        }
+      });
+      cloudSyncPaused = false;
+
+      await loadState();
+      updateAccountUI();
+
+      if (result.repairedDocuments > 0) {
+        toast(
+          `Se repararon ${result.repairedDocuments} documentos con fechas incorrectas.`,
+          "success"
+        );
+      }
+    } catch (error) {
+      cloudSyncPaused = false;
+      console.error("No se pudieron reparar las fechas:", error);
+      toast(
+        "La aplicación funciona, pero no pudo completar la reparación automática de fechas.",
+        "error"
+      );
+    }
+  }
+
   async function refreshCloudCatalog(showToast = true) {
     if (!firebaseBridge?.currentUser) return;
 
@@ -1537,6 +1591,7 @@
     setAuthMessage("Sesión iniciada.", "success");
     updateAccountUI();
 
+    await repairFirebaseDatesIfNeeded();
     await refreshCloudCatalog(false);
 
     const migrated = Boolean(state.settings[migrationKey(user.uid)]);

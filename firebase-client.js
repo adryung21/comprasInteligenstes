@@ -54,13 +54,28 @@ function clean(value, max = 500) {
 
 function withoutUndefined(value) {
   if (Array.isArray(value)) return value.map(withoutUndefined);
+
   if (value && typeof value === "object") {
+    const prototype = Object.getPrototypeOf(value);
+
+    // Firestore FieldValue, Timestamp, Date y otros objetos especiales
+    // deben conservarse intactos. Convertirlos a objetos planos provoca
+    // que serverTimestamp() se guarde como {_methodName: "serverTimestamp"}.
+    if (
+      value._methodName ||
+      value instanceof Date ||
+      (prototype && prototype !== Object.prototype)
+    ) {
+      return value;
+    }
+
     return Object.fromEntries(
       Object.entries(value)
         .filter(([, item]) => item !== undefined)
         .map(([key, item]) => [key, withoutUndefined(item)])
     );
   }
+
   return value;
 }
 
@@ -365,6 +380,142 @@ async function migrateLocalData(snapshot) {
   };
 }
 
+
+function isBrokenServerTimestamp(value) {
+  return Boolean(
+    value &&
+    typeof value === "object" &&
+    value._methodName === "serverTimestamp"
+  );
+}
+
+function collectTimestampRepairs(snapshot, fields, operations) {
+  for (const documentSnapshot of snapshot.docs) {
+    const data = documentSnapshot.data();
+    const patch = {};
+
+    for (const field of fields) {
+      if (isBrokenServerTimestamp(data[field])) {
+        patch[field] = serverTimestamp();
+      }
+    }
+
+    if (Object.keys(patch).length) {
+      operations.push({
+        ref: documentSnapshot.ref,
+        data: patch,
+        options: { merge: true }
+      });
+    }
+  }
+}
+
+async function repairCloudTimestamps() {
+  const user = auth.currentUser;
+  if (!user) throw new Error("Debes iniciar sesión para reparar las fechas.");
+
+  const profile = currentProfile || await ensureProfile(user);
+  if (profile?.role !== "admin") {
+    return { repairedDocuments: 0, skipped: true };
+  }
+
+  const operations = [];
+
+  const collectionsToRepair = [
+    {
+      reference: collection(cloudDb, "categories"),
+      fields: ["createdAtCloud", "updatedAtCloud"]
+    },
+    {
+      reference: collection(cloudDb, "stores"),
+      fields: ["createdAtCloud", "updatedAtCloud"]
+    },
+    {
+      reference: collection(cloudDb, "products"),
+      fields: ["createdAtCloud", "updatedAtCloud", "verifiedAt"]
+    },
+    {
+      reference: collection(cloudDb, "verifiedPrices"),
+      fields: ["createdAtCloud", "updatedAtCloud", "verifiedAt"]
+    },
+    {
+      reference: collection(cloudDb, "priceHistory"),
+      fields: ["createdAtCloud", "updatedAtCloud", "verifiedAt"]
+    },
+    {
+      reference: collection(cloudDb, "submissions"),
+      fields: ["createdAtCloud", "updatedAtCloud", "reviewedAt"]
+    },
+    {
+      reference: collection(cloudDb, "users"),
+      fields: ["createdAtCloud", "updatedAtCloud"]
+    },
+    {
+      reference: collection(cloudDb, "users", user.uid, "privatePrices"),
+      fields: ["createdAtCloud", "updatedAtCloud", "verifiedAt"]
+    },
+    {
+      reference: collection(cloudDb, "users", user.uid, "shoppingItems"),
+      fields: ["createdAtCloud", "updatedAtCloud"]
+    },
+    {
+      reference: collection(cloudDb, "users", user.uid, "purchaseHistory"),
+      fields: ["createdAtCloud", "updatedAtCloud", "finishedAtCloud"]
+    },
+    {
+      reference: collection(cloudDb, "users", user.uid, "sharedLists"),
+      fields: ["createdAtCloud", "updatedAtCloud", "importedAtCloud"]
+    }
+  ];
+
+  for (const descriptor of collectionsToRepair) {
+    const snapshot = await getDocs(descriptor.reference);
+    collectTimestampRepairs(snapshot, descriptor.fields, operations);
+  }
+
+  const migrationRef = doc(cloudDb, "users", user.uid, "migration", "v2");
+  const migrationSnapshot = await getDoc(migrationRef);
+
+  if (migrationSnapshot.exists()) {
+    const migrationData = migrationSnapshot.data();
+    const migrationPatch = {};
+
+    for (const field of ["completedAtCloud", "updatedAtCloud"]) {
+      if (isBrokenServerTimestamp(migrationData[field])) {
+        migrationPatch[field] = serverTimestamp();
+      }
+    }
+
+    if (Object.keys(migrationPatch).length) {
+      operations.push({
+        ref: migrationRef,
+        data: migrationPatch,
+        options: { merge: true }
+      });
+    }
+  }
+
+  if (operations.length) {
+    await chunkedSet(operations);
+  }
+
+  await setDoc(
+    doc(cloudDb, "users", user.uid, "maintenance", "timestampRepairV201"),
+    {
+      completed: true,
+      repairedDocuments: operations.length,
+      completedAtCloud: serverTimestamp(),
+      appVersion: APP_VERSION
+    },
+    { merge: true }
+  );
+
+  return {
+    repairedDocuments: operations.length,
+    skipped: false
+  };
+}
+
 async function loadCloudData() {
   const user = auth.currentUser;
   if (!user) return null;
@@ -568,6 +719,7 @@ window.MCIFirebase = {
 
   ensureProfile,
   migrateLocalData,
+  repairCloudTimestamps,
   loadCloudData,
   mirrorPut,
   mirrorDelete

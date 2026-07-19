@@ -1165,7 +1165,7 @@ textarea:focus {
       <div class="auth-brand">
         <img src="icons/icon-192.png" alt="" />
         <div>
-          <span class="eyebrow">Versión 2.0 Firebase</span>
+          <span class="eyebrow">Versión 2.0.1 Firebase</span>
           <h1>Mi Compra Inteligente</h1>
           <p>Inicia sesión para acceder al catálogo y conservar tus datos.</p>
         </div>
@@ -1196,7 +1196,7 @@ textarea:focus {
       </form>
 
       <div id="authMessage" class="auth-message">Conectando con Firebase…</div>
-      <small class="version-label">Mi Compra Inteligente v2.0.0</small>
+      <small class="version-label">Mi Compra Inteligente v2.0.1</small>
     </div>
   </section>
 
@@ -3281,6 +3281,60 @@ textarea:focus {
     }
   }
 
+  function timestampRepairKey(uid) {
+    return `firebaseTimestampRepairV201_${uid}`;
+  }
+
+  async function repairFirebaseDatesIfNeeded() {
+    if (
+      !firebaseBridge?.currentUser ||
+      firebaseProfile?.role !== "admin"
+    ) {
+      return;
+    }
+
+    const key = timestampRepairKey(firebaseUser.uid);
+    if (state.settings[key]?.completed) return;
+
+    const badge = $("#cloudStatusBadge");
+    if (badge) {
+      badge.textContent = "Reparando fechas…";
+      badge.className = "cloud-status-badge";
+    }
+
+    try {
+      const result = await firebaseBridge.repairCloudTimestamps();
+
+      cloudSyncPaused = true;
+      await put("settings", {
+        id: key,
+        value: {
+          completed: true,
+          completedAt: new Date().toISOString(),
+          repairedDocuments: result.repairedDocuments
+        }
+      });
+      cloudSyncPaused = false;
+
+      await loadState();
+      updateAccountUI();
+
+      if (result.repairedDocuments > 0) {
+        toast(
+          `Se repararon ${result.repairedDocuments} documentos con fechas incorrectas.`,
+          "success"
+        );
+      }
+    } catch (error) {
+      cloudSyncPaused = false;
+      console.error("No se pudieron reparar las fechas:", error);
+      toast(
+        "La aplicación funciona, pero no pudo completar la reparación automática de fechas.",
+        "error"
+      );
+    }
+  }
+
   async function refreshCloudCatalog(showToast = true) {
     if (!firebaseBridge?.currentUser) return;
 
@@ -3322,6 +3376,7 @@ textarea:focus {
     setAuthMessage("Sesión iniciada.", "success");
     updateAccountUI();
 
+    await repairFirebaseDatesIfNeeded();
     await refreshCloudCatalog(false);
 
     const migrated = Boolean(state.settings[migrationKey(user.uid)]);
