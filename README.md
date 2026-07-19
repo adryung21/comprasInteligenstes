@@ -1,3 +1,26 @@
+# Mi Compra Inteligente v1.6
+
+Incluye finalización de compra, historial local, informes imprimibles/PDF, listas compartidas separadas y creación de nueva lista.
+
+# Mi Compra Inteligente — PWA v1.5 IA visual
+
+Esta versión corrige el reconocimiento de productos con logos, letras decorativas, reflejos y empaques inclinados.
+
+Cambios:
+- La IA visual se ejecuta primero cuando existe un endpoint configurado.
+- El OCR local queda como respaldo.
+- El OCR ya no rellena nombre y marca con texto de baja confianza.
+- Se realizan tres intentos OCR con recorte, ampliación y contraste.
+- Se muestra el método utilizado y la confianza.
+- Se añadió prueba de conexión del endpoint.
+- Se incluye un backend Cloudflare Worker separado para conectar una API visual de forma segura.
+
+Para una fotografía como la de ejemplo, el resultado esperado es:
+- Nombre: Ruffles Crema y Cebolla
+- Marca: Ruffles
+- Presentación: 68 g
+- Categoría: Alimentos
+
 # Mi Compra Inteligente — PWA v1.4 Productos
 
 Novedades:

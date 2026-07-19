@@ -2,8 +2,8 @@
   "use strict";
 
   const DB_NAME = "mi-compra-inteligente-db";
-  const DB_VERSION = 1;
-  const STORE_NAMES = ["products", "stores", "categories", "prices", "shoppingItems", "settings"];
+  const DB_VERSION = 2;
+  const STORE_NAMES = ["products", "stores", "categories", "prices", "shoppingItems", "settings", "purchaseHistory", "sharedLists"];
 
   let db;
   let storageBackend = "indexeddb";
@@ -20,6 +20,8 @@
     categories: [],
     prices: [],
     shoppingItems: [],
+    purchaseHistory: [],
+    sharedLists: [],
     settings: {}
   };
 
@@ -207,7 +209,7 @@
   }
 
   async function loadState() {
-    const [products, stores, categories, prices, shoppingItems, settingsRows] =
+    const [products, stores, categories, prices, shoppingItems, settingsRows, purchaseHistory, sharedLists] =
       await Promise.all(STORE_NAMES.map(getAll));
 
     state.products = products;
@@ -215,6 +217,8 @@
     state.categories = categories;
     state.prices = prices;
     state.shoppingItems = shoppingItems;
+    state.purchaseHistory = purchaseHistory;
+    state.sharedLists = sharedLists;
     state.settings = Object.fromEntries(settingsRows.map((row) => [row.id, row.value]));
   }
 
@@ -548,6 +552,180 @@
       <div class="mini-item"><span>${escapeHTML(x.name)}</span><button class="btn btn-danger btn-sm" data-action="delete-category" data-id="${x.id}">Borrar</button></div>`).join("") : "No hay categorías.";
 
     $("#aiEndpoint").value = state.settings.aiEndpoint || "";
+    updateAIStatus();
+  }
+
+  function updateAIStatus(status = "") {
+    const badge = $("#aiStatusBadge");
+    if (!badge) return;
+
+    const endpoint = String(state.settings.aiEndpoint || "").trim();
+    badge.classList.remove("ready", "error");
+
+    if (status === "error") {
+      badge.textContent = "Error de conexión";
+      badge.classList.add("error");
+    } else if (endpoint) {
+      badge.textContent = "IA configurada";
+      badge.classList.add("ready");
+    } else {
+      badge.textContent = "Sin configurar";
+    }
+  }
+
+  function showEndpointMessage(message, type = "") {
+    const box = $("#aiEndpointMessage");
+    if (!box) return;
+    box.textContent = message;
+    box.className = `endpoint-message ${type}`.trim();
+  }
+
+  async function testAIEndpoint() {
+    const endpoint = $("#aiEndpoint").value.trim();
+    if (!endpoint) {
+      showEndpointMessage("Primero escribe la dirección del endpoint.", "error");
+      return;
+    }
+
+    const button = $("#testAIEndpointBtn");
+    button.disabled = true;
+    button.textContent = "Probando…";
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "GET",
+        headers: { "Accept": "application/json" }
+      });
+
+      if (!response.ok) throw new Error(`Respuesta ${response.status}`);
+      const data = await response.json();
+
+      if (!data?.ok) throw new Error("El servidor no confirmó disponibilidad.");
+
+      showEndpointMessage("Conexión correcta. La IA visual está lista.", "success");
+      updateAIStatus();
+    } catch (error) {
+      showEndpointMessage(`No se pudo conectar: ${error.message}`, "error");
+      updateAIStatus("error");
+    } finally {
+      button.disabled = false;
+      button.textContent = "Probar conexión";
+    }
+  }
+
+
+  function shoppingSnapshot() {
+    return state.shoppingItems.map(item => {
+      const product = getProduct(item.productId);
+      const best = getBestPrice(item.productId);
+      return {
+        productId:item.productId,
+        name:product?.name || "Producto eliminado",
+        brand:product?.brand || "",
+        category:getCategory(product?.categoryId)?.name || "",
+        quantity:Number(item.quantity),
+        completed:Boolean(item.completed),
+        store:best ? (getStore(best.storeId)?.name || "") : "",
+        unitPrice:best ? Number(best.price) : null,
+        subtotal:best ? Number(best.price)*Number(item.quantity) : null
+      };
+    });
+  }
+
+  function renderHistoryAndSharedLists() {
+    const history = [...state.purchaseHistory].sort((a,b)=>Number(b.finishedAt)-Number(a.finishedAt));
+    const hc = $("#purchaseHistoryContainer");
+    hc.className = history.length ? "history-list" : "history-list empty-state";
+    hc.innerHTML = history.length ? history.map(h => `
+      <article class="history-card">
+        <div class="history-card-head"><div><h4>${escapeHTML(h.name)}</h4>
+        <p>${new Date(h.finishedAt).toLocaleString("es-EC")} · ${h.completedCount}/${h.totalCount} recolectados</p></div>
+        <strong>${money(h.total)}</strong></div>
+        <div class="history-card-actions">
+          <button class="btn btn-secondary btn-sm" data-action="print-history" data-id="${h.id}">Informe PDF</button>
+          <button class="btn btn-secondary btn-sm" data-action="reuse-history" data-id="${h.id}">Reutilizar lista</button>
+          <button class="btn btn-danger btn-sm" data-action="delete-history" data-id="${h.id}">Borrar</button>
+        </div>
+      </article>`).join("") : "Todavía no hay compras finalizadas.";
+
+    const shared = [...state.sharedLists].sort((a,b)=>Number(b.importedAt)-Number(a.importedAt));
+    const sc = $("#sharedListsContainer");
+    sc.className = shared.length ? "history-list" : "history-list empty-state";
+    sc.innerHTML = shared.length ? shared.map(s => `
+      <article class="history-card">
+        <div class="history-card-head"><div><h4>${escapeHTML(s.name)}</h4>
+        <p>${s.items.length} artículos · importada ${new Date(s.importedAt).toLocaleString("es-EC")}</p></div></div>
+        <div class="history-card-actions">
+          <button class="btn btn-secondary btn-sm" data-action="activate-shared" data-id="${s.id}">Abrir como nueva</button>
+          <button class="btn btn-secondary btn-sm" data-action="merge-shared" data-id="${s.id}">Combinar</button>
+          <button class="btn btn-danger btn-sm" data-action="delete-shared" data-id="${s.id}">Borrar</button>
+        </div>
+      </article>`).join("") : "No hay listas importadas.";
+  }
+
+  async function replaceActiveList(items) {
+    for (const item of state.shoppingItems) await remove("shoppingItems", item.id);
+    for (const row of items) {
+      let product = state.products.find(p => p.id === row.productId) ||
+        state.products.find(p => p.name.toLowerCase() === String(row.name||"").toLowerCase());
+      if (!product) {
+        product = {id:uid("product"),name:row.name||"Producto importado",brand:row.brand||"",
+          presentation:"",categoryId:state.categories.find(c=>c.name===row.category)?.id || state.categories[0]?.id || "",
+          barcode:"",imageData:"",createdAt:Date.now(),updatedAt:Date.now()};
+        await put("products", product);
+      }
+      await put("shoppingItems",{id:uid("shopping"),productId:product.id,quantity:Number(row.quantity||1),
+        completed:false,createdAt:Date.now()});
+    }
+    await loadState(); renderAll();
+  }
+
+  async function finishPurchase() {
+    if (!state.shoppingItems.length) return toast("La lista está vacía.","error");
+    const name = prompt("Nombre de esta compra:", `Compra ${new Date().toLocaleDateString("es-EC")}`) || "";
+    if (!name.trim()) return;
+    const items = shoppingSnapshot();
+    const total = items.reduce((s,i)=>s+(i.subtotal||0),0);
+    const completedCount = items.filter(i=>i.completed).length;
+    if (!confirm(`Se guardará la compra y se limpiará la lista activa.\n\n${completedCount} de ${items.length} recolectados\nTotal: ${money(total)}\n\n¿Finalizar?`)) return;
+    await put("purchaseHistory",{id:uid("purchase"),name:name.trim(),finishedAt:Date.now(),items,
+      total,totalCount:items.length,completedCount,pendingCount:items.length-completedCount});
+    for (const item of state.shoppingItems) await remove("shoppingItems",item.id);
+    await loadState(); renderAll(); toast("Compra finalizada y guardada en el historial.","success");
+  }
+
+  function printPurchaseReport(record) {
+    const rows = record.items.map(i=>`<tr><td>${escapeHTML(i.name)}</td><td>${escapeHTML(i.category)}</td>
+      <td>${i.quantity}</td><td>${escapeHTML(i.store||"—")}</td><td>${i.unitPrice===null?"—":money(i.unitPrice)}</td>
+      <td>${i.subtotal===null?"—":money(i.subtotal)}</td><td>${i.completed?"Recolectado":"Pendiente"}</td></tr>`).join("");
+    const w = window.open("","_blank");
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHTML(record.name)}</title>
+      <style>body{font-family:Arial;padding:28px;color:#111}h1{margin-bottom:4px}table{width:100%;border-collapse:collapse;margin-top:20px}
+      th,td{border:1px solid #bbb;padding:8px;text-align:left}th{background:#eee}.summary{display:flex;gap:24px;margin:18px 0}
+      @media print{button{display:none}}</style></head><body><h1>Mi Compra Inteligente</h1><h2>${escapeHTML(record.name)}</h2>
+      <p>Fecha: ${new Date(record.finishedAt).toLocaleString("es-EC")}</p>
+      <div class="summary"><strong>Total: ${money(record.total)}</strong><strong>Progreso: ${record.completedCount}/${record.totalCount} (${record.totalCount?Math.round(record.completedCount/record.totalCount*100):0}%)</strong></div>
+      <table><thead><tr><th>Producto</th><th>Categoría</th><th>Cant.</th><th>Tienda</th><th>P. unitario</th><th>Subtotal</th><th>Estado</th></tr></thead>
+      <tbody>${rows}</tbody></table><p>Generado: ${new Date().toLocaleString("es-EC")}</p><button onclick="window.print()">Imprimir / Guardar como PDF</button>
+      <script>setTimeout(()=>window.print(),500)<\/script></body></html>`);
+    w.document.close();
+  }
+
+  function exportSharedList() {
+    if (!state.shoppingItems.length) return toast("La lista está vacía.","error");
+    const payload={type:"mi-compra-shared-list",version:1,name:`Lista compartida ${new Date().toLocaleDateString("es-EC")}`,
+      exportedAt:new Date().toISOString(),items:shoppingSnapshot().map(i=>({productId:i.productId,name:i.name,brand:i.brand,category:i.category,quantity:i.quantity}))};
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}), url=URL.createObjectURL(blob), a=document.createElement("a");
+    a.href=url;a.download=`lista-compra-${today()}.json`;a.click();URL.revokeObjectURL(url);
+  }
+
+  async function importSharedList(file) {
+    try {
+      const data=JSON.parse(await file.text());
+      if (data.type!=="mi-compra-shared-list" || !Array.isArray(data.items)) throw new Error();
+      await put("sharedLists",{id:uid("shared"),name:data.name||"Lista compartida",items:data.items,importedAt:Date.now()});
+      await loadState();renderAll();toast("Lista importada sin reemplazar la lista activa.","success");
+    } catch { toast("El archivo no es una lista compartida válida.","error"); }
   }
 
   function renderAll() {
@@ -558,6 +736,7 @@
     renderCompare();
     renderShopping();
     renderSettings();
+    renderHistoryAndSharedLists();
   }
 
   function configurePriceProduct(productId = "") {
@@ -866,6 +1045,31 @@
       await remove("stores", id);
     }
 
+    if (action === "print-history") {
+      const record=state.purchaseHistory.find(x=>x.id===id); if(record) printPurchaseReport(record);
+    }
+    if (action === "reuse-history") {
+      const record=state.purchaseHistory.find(x=>x.id===id);
+      if(record && confirm("Esto reemplazará la lista activa. ¿Continuar?")) await replaceActiveList(record.items);
+    }
+    if (action === "delete-history") {
+      if(confirm("¿Borrar este registro histórico?")) await remove("purchaseHistory",id);
+    }
+    if (action === "activate-shared") {
+      const list=state.sharedLists.find(x=>x.id===id);
+      if(list && confirm("Esto reemplazará la lista activa. ¿Continuar?")) await replaceActiveList(list.items);
+    }
+    if (action === "merge-shared") {
+      const list=state.sharedLists.find(x=>x.id===id);
+      if(list){ for(const row of list.items){ let p=state.products.find(x=>x.id===row.productId)||state.products.find(x=>x.name.toLowerCase()===String(row.name).toLowerCase());
+        if(!p){p={id:uid("product"),name:row.name,brand:row.brand||"",presentation:"",categoryId:state.categories.find(c=>c.name===row.category)?.id||state.categories[0]?.id||"",barcode:"",imageData:"",createdAt:Date.now(),updatedAt:Date.now()};await put("products",p);}
+        const ex=state.shoppingItems.find(x=>x.productId===p.id&&!x.completed); if(ex){ex.quantity=Number(ex.quantity)+Number(row.quantity||1);await put("shoppingItems",ex);}else await put("shoppingItems",{id:uid("shopping"),productId:p.id,quantity:Number(row.quantity||1),completed:false,createdAt:Date.now()});
+      }}
+    }
+    if (action === "delete-shared") {
+      if(confirm("¿Borrar esta lista importada?")) await remove("sharedLists",id);
+    }
+
     if (action === "delete-category") {
       const used = state.products.some((x) => x.categoryId === id);
       if (used) {
@@ -960,145 +1164,425 @@
     $("#ocrProgressBar").style.width = `${pct}%`;
   }
 
+  function setScanMethod(message, local = false) {
+    const box = $("#scanMethodStatus");
+    box.textContent = message;
+    box.className = `scan-method-status${local ? " local" : ""}`;
+  }
+
   function inferCategory(text) {
     const t = text.toLowerCase();
     const rules = [
-      ["Bebidas", ["agua","jugo","bebida","gaseosa","leche","café","cafe","té","te","refresco"]],
+      ["Bebidas", ["agua","jugo","bebida","gaseosa","leche","café","cafe","té","refresco"]],
       ["Limpieza", ["detergente","cloro","desinfectante","lavavajilla","suavizante","limpiador"]],
       ["Higiene personal", ["shampoo","champú","jabon","jabón","crema dental","desodorante","pañal","toalla sanitaria"]],
       ["Medicamentos", ["tabletas","capsulas","cápsulas","jarabe","ibuprofeno","paracetamol"]],
       ["Mascotas", ["perro","gato","mascota","croquetas"]],
       ["Hogar", ["papel aluminio","servilleta","bolsa","foco","esponja"]],
-      ["Alimentos", ["arroz","azucar","azúcar","sal","harina","aceite","galleta","cereal","yogur","atún","atun","pasta","salsa"]]
+      ["Alimentos", ["arroz","azucar","azúcar","sal","harina","aceite","galleta","cereal","yogur","atún","atun","pasta","salsa","papas","snack","chips","crema y cebolla"]]
     ];
-    return rules.find(([, words]) => words.some(w => t.includes(w)))?.[0] || "Otros";
+    return rules.find(([, words]) => words.some(word => t.includes(word)))?.[0] || "Otros";
+  }
+
+  function normalizeOCRLine(text) {
+    return String(text || "")
+      .replace(/[|_~`^]/g, " ")
+      .replace(/[^\p{L}\p{N}\s.,%+-]/gu, " ")
+      .replace(/\s+/g, " ")
+      .trim();
   }
 
   function extractProductData(ocr) {
     const rawText = String(ocr.text || "").replace(/\r/g, "");
-    const sourceLines = ocr.lines?.length
-      ? ocr.lines.map(x => ({text:x.text, confidence:x.confidence || 0}))
-      : rawText.split("\n").map(text => ({text, confidence:50}));
-    const noise = /(informaci[oó]n|nutricional|ingredientes|contenido neto|elaborado|registro sanitario|lote|vence|conservar|distribuido|servicio al cliente|c[oó]digo|www\.|precio|calor[ií]as)/i;
-    const candidates = sourceLines
-      .map((x,index) => ({...x,index,text:x.text.replace(/[|_~]/g," ").replace(/\s+/g," ").trim()}))
-      .filter(x => {
-        const letters = (x.text.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g)||[]).length;
-        return x.text.length >= 3 && x.text.length <= 70 && letters >= 3 &&
-          !noise.test(x.text) && !/^\d[\d\s.,%-]*$/.test(x.text);
-      })
-      .map(x => {
-        const words = x.text.split(" ").length;
-        const letters = (x.text.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g)||[]).length;
-        const upper = (x.text.match(/[A-ZÁÉÍÓÚÜÑ]/g)||[]).length / Math.max(1, letters);
-        let score = x.confidence + Math.max(0,35-x.index*3) + upper*18;
-        if (words >= 2 && words <= 6) score += 18;
-        if (x.text.length >= 5 && x.text.length <= 40) score += 12;
-        return {...x,score};
-      }).sort((a,b)=>b.score-a.score);
+    const promoNoise = /\b(paket[oó]n|oferta|promoci[oó]n|gratis|nuevo|ahorro|pack|precio|super|extra|informaci[oó]n|nutricional|ingredientes|contenido neto|elaborado|registro sanitario|lote|vence|conservar|distribuido|servicio al cliente|c[oó]digo|www\.|calor[ií]as)\b/i;
 
-    const presentation = rawText.match(/\b\d+(?:[.,]\d+)?\s?(?:kg|g|gr|mg|l|lt|ml|cc|oz|unidades?|und)\b/i)?.[0] || "";
-    const barcode = rawText.replace(/\s/g,"").match(/\b\d{8,14}\b/)?.[0] || "";
-    const first = candidates[0]?.text || "";
-    const second = candidates.find(x => x.text !== first)?.text || "";
+    const rawLines = ocr.lines?.length
+      ? ocr.lines.map((line, index) => ({
+          text: normalizeOCRLine(line.text),
+          confidence: Number(line.confidence || 0),
+          index,
+          bbox: line.bbox || {}
+        }))
+      : rawText.split("\n").map((text, index) => ({
+          text: normalizeOCRLine(text),
+          confidence: 35,
+          index,
+          bbox: {}
+        }));
+
+    const candidates = rawLines
+      .filter(line => {
+        const letters = (line.text.match(/\p{L}/gu) || []).length;
+        return line.text.length >= 3 &&
+          line.text.length <= 60 &&
+          letters >= 3 &&
+          !promoNoise.test(line.text) &&
+          !/^\d[\d\s.,%-]*$/.test(line.text);
+      })
+      .map(line => {
+        const words = line.text.split(/\s+/).length;
+        const height = Math.max(0, Number(line.bbox?.y1 || 0) - Number(line.bbox?.y0 || 0));
+        const width = Math.max(0, Number(line.bbox?.x1 || 0) - Number(line.bbox?.x0 || 0));
+        const letters = (line.text.match(/\p{L}/gu) || []).length;
+        const uppercase = (line.text.match(/\p{Lu}/gu) || []).length / Math.max(1, letters);
+
+        let score = line.confidence;
+        score += Math.min(40, height * 0.8);
+        score += Math.min(20, width * 0.025);
+        score += uppercase * 10;
+        if (words >= 1 && words <= 5) score += 12;
+        if (line.text.length >= 5 && line.text.length <= 35) score += 10;
+
+        return { ...line, score };
+      })
+      .sort((a, b) => b.score - a.score);
+
+    const presentation =
+      rawText.match(/\b\d+(?:[.,]\d+)?\s?(?:kg|g|gr|mg|l|lt|litros?|ml|cc|oz|unidades?|und)\b/i)?.[0] || "";
+
+    const barcode =
+      rawText.replace(/\s/g, "").match(/\b\d{8,14}\b/)?.[0] || "";
+
+    const best = candidates[0];
+    const second = candidates.find(item => item.text !== best?.text);
+
     let brand = "";
-    let name = first;
-    if (first && second && first.split(" ").length <= 2 && first.length <= 22) {
-      brand = first;
-      name = second;
+    let name = "";
+
+    if (best && best.confidence >= 45) {
+      brand = best.text;
+      name = best.text;
+
+      if (second && second.confidence >= 40 && second.text.length <= 35) {
+        name = `${best.text} ${second.text}`.trim();
+      }
     }
-    name = name.replace(/\b\d+(?:[.,]\d+)?\s?(?:kg|g|gr|mg|l|lt|ml|cc|oz)\b/ig,"").trim();
-    return {name,brand,presentation,category:inferCategory(rawText),barcode,rawText};
+
+    const averageConfidence = candidates.length
+      ? candidates.slice(0, 3).reduce((sum, item) => sum + item.confidence, 0) / Math.min(3, candidates.length)
+      : 0;
+
+    if (averageConfidence < 42 || name.length < 3) {
+      name = "";
+      brand = "";
+    }
+
+    return {
+      name,
+      brand,
+      presentation,
+      category: inferCategory(rawText),
+      barcode,
+      rawText,
+      confidence: Math.round(averageConfidence),
+      source: "ocr"
+    };
+  }
+
+  function imageToCanvas(imageData, options = {}) {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+
+      image.onload = () => {
+        const crop = options.crop || { x: 0, y: 0, width: 1, height: 1 };
+        const sourceX = Math.round(image.naturalWidth * crop.x);
+        const sourceY = Math.round(image.naturalHeight * crop.y);
+        const sourceWidth = Math.round(image.naturalWidth * crop.width);
+        const sourceHeight = Math.round(image.naturalHeight * crop.height);
+        const maxDimension = options.maxDimension || 1800;
+        const scale = Math.min(3, maxDimension / Math.max(sourceWidth, sourceHeight));
+
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(sourceWidth * scale));
+        canvas.height = Math.max(1, Math.round(sourceHeight * scale));
+
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+        context.drawImage(
+          image,
+          sourceX, sourceY, sourceWidth, sourceHeight,
+          0, 0, canvas.width, canvas.height
+        );
+
+        if (options.enhance) {
+          const imageDataObject = context.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageDataObject.data;
+
+          for (let i = 0; i < data.length; i += 4) {
+            const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+            const contrasted = Math.max(0, Math.min(255, (gray - 128) * 1.9 + 128));
+            data[i] = contrasted;
+            data[i + 1] = contrasted;
+            data[i + 2] = contrasted;
+          }
+
+          context.putImageData(imageDataObject, 0, 0);
+        }
+
+        resolve(canvas.toDataURL("image/jpeg", 0.9));
+      };
+
+      image.onerror = reject;
+      image.src = imageData;
+    });
   }
 
   async function runLocalOCR(imageData) {
-    if (!window.Tesseract) throw new Error("No se pudo cargar el motor OCR. Verifica la conexión.");
+    if (!window.Tesseract) {
+      throw new Error("No se pudo cargar el OCR local. Verifica la conexión.");
+    }
+
     const worker = await Tesseract.createWorker("spa+eng", 1, {
-      logger: m => {
+      logger: message => {
         const labels = {
-          "loading tesseract core":"Cargando motor OCR",
-          "initializing tesseract":"Inicializando OCR",
-          "loading language traineddata":"Descargando idioma",
-          "initializing api":"Preparando reconocimiento",
-          "recognizing text":"Leyendo texto de la etiqueta"
+          "loading tesseract core": "Cargando OCR local",
+          "initializing tesseract": "Inicializando OCR",
+          "loading language traineddata": "Descargando idiomas",
+          "initializing api": "Preparando reconocimiento",
+          "recognizing text": "Leyendo texto impreso"
         };
-        setOCRProgress(labels[m.status] || "Analizando imagen", Number(m.progress || 0));
+
+        setOCRProgress(
+          labels[message.status] || "Analizando texto",
+          Number(message.progress || 0)
+        );
       }
     });
+
     try {
-      return (await worker.recognize(imageData)).data;
+      const variants = [
+        await imageToCanvas(imageData, {
+          crop: { x: 0.08, y: 0.08, width: 0.84, height: 0.84 },
+          maxDimension: 1900,
+          enhance: false
+        }),
+        await imageToCanvas(imageData, {
+          crop: { x: 0.08, y: 0.08, width: 0.84, height: 0.84 },
+          maxDimension: 1900,
+          enhance: true
+        }),
+        await imageToCanvas(imageData, {
+          crop: { x: 0.15, y: 0.18, width: 0.70, height: 0.58 },
+          maxDimension: 1900,
+          enhance: true
+        })
+      ];
+
+      const results = [];
+
+      await worker.setParameters({
+        tessedit_pageseg_mode: "11",
+        preserve_interword_spaces: "1"
+      });
+
+      for (let index = 0; index < variants.length; index++) {
+        setOCRProgress(`OCR local: intento ${index + 1} de ${variants.length}`, index / variants.length);
+        results.push((await worker.recognize(variants[index])).data);
+      }
+
+      const mergedText = results.map(result => result.text || "").join("\n");
+      const mergedLines = results.flatMap(result => result.lines || []);
+
+      return {
+        text: mergedText,
+        lines: mergedLines
+      };
     } finally {
       await worker.terminate();
     }
   }
 
+  async function callVisualAI(imageData) {
+    const endpoint = String(state.settings.aiEndpoint || "").trim();
+
+    if (!endpoint) {
+      throw new Error("La IA visual todavía no está configurada.");
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000);
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          image: imageData,
+          categories: state.categories.map(category => category.name)
+        })
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || `Error del servidor (${response.status})`);
+      }
+
+      if (!data?.name && !data?.brand) {
+        throw new Error("La IA no encontró un producto reconocible.");
+      }
+
+      return {
+        name: String(data.name || "").trim(),
+        brand: String(data.brand || "").trim(),
+        presentation: String(data.presentation || "").trim(),
+        category: String(data.category || "Otros").trim(),
+        barcode: String(data.barcode || "").trim(),
+        rawText: String(data.visibleText || data.notes || "Reconocimiento visual completado."),
+        confidence: Math.round(Number(data.confidence || 0) * 100),
+        source: "ai",
+        notes: String(data.notes || "").trim()
+      };
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
   function renderOCRResult(result) {
-    const categories = [...state.categories].sort((a,b)=>a.name.localeCompare(b.name));
-    const selected = categories.find(c => c.name.toLowerCase() === String(result.category||"").toLowerCase())?.id || "";
+    const categories = [...state.categories].sort((a, b) => a.name.localeCompare(b.name));
+    const selected =
+      categories.find(category =>
+        category.name.toLowerCase() === String(result.category || "").toLowerCase()
+      )?.id || "";
+
+    const confidence = Math.max(0, Math.min(100, Number(result.confidence || 0)));
+    const lowConfidence = result.source === "ocr" && (!result.name || confidence < 50);
+
     $("#scanResult").className = "scan-result";
     $("#scanResult").innerHTML = `
       <div class="ocr-fields">
+        <div class="scan-confidence">
+          <span>Método utilizado</span>
+          <strong>${result.source === "ai" ? "IA visual" : "OCR local"} · ${confidence}%</strong>
+        </div>
+
         <label>Nombre del producto detectado *
-          <input id="ocrName" value="${escapeHTML(result.name || "")}" placeholder="Corrige o escribe el nombre">
+          <input id="ocrName" value="${escapeHTML(result.name || "")}"
+            placeholder="${lowConfidence ? "No reconocido: escribe el nombre o configura IA visual" : "Corrige o escribe el nombre"}">
         </label>
+
         <label>Marca
           <input id="ocrBrand" value="${escapeHTML(result.brand || "")}" placeholder="Marca detectada">
         </label>
+
         <label>Presentación
-          <input id="ocrPresentation" value="${escapeHTML(result.presentation || "")}" placeholder="Ej. 500 g">
+          <input id="ocrPresentation" value="${escapeHTML(result.presentation || "")}" placeholder="Ej. 68 g">
         </label>
+
         <label>Categoría
-          <select id="ocrCategory">${optionList(categories,"Selecciona una categoría",selected)}</select>
+          <select id="ocrCategory">${optionList(categories, "Selecciona una categoría", selected)}</select>
         </label>
+
         <label>Código de barras
           <input id="ocrBarcode" value="${escapeHTML(result.barcode || "")}" inputmode="numeric">
         </label>
       </div>
-      <details class="ocr-raw"><summary>Ver texto completo detectado</summary><pre>${escapeHTML(result.rawText || "No se detectó texto.")}</pre></details>`;
+
+      ${lowConfidence ? `
+        <div class="scan-warning">
+          El OCR local no pudo interpretar correctamente el logo o el texto decorativo.
+          Para reconocer productos como Ruffles, Coca-Cola o marcas con letras estilizadas,
+          configura el endpoint de IA visual en Ajustes.
+        </div>` : ""}
+
+      ${result.notes ? `<div class="scan-warning">${escapeHTML(result.notes)}</div>` : ""}
+
+      <details class="ocr-raw">
+        <summary>Ver texto o detalles detectados</summary>
+        <pre>${escapeHTML(result.rawText || "No se detectó texto adicional.")}</pre>
+      </details>`;
   }
 
   async function analyzeImage() {
     if (!capturedImageData) return;
+
     $("#analyzeBtn").disabled = true;
     $("#createFromScanBtn").classList.add("hidden");
+    $("#scanMethodStatus").classList.add("hidden");
     $("#scanResult").className = "scan-result";
-    $("#scanResult").textContent = "Preparando reconocimiento de texto…";
-    setOCRProgress("Preparando OCR",0);
+    $("#scanResult").textContent = "Preparando reconocimiento…";
+    setOCRProgress("Preparando análisis", 0);
+
     try {
       const barcode = await detectBarcode(capturedImageData);
-      const known = barcode && state.products.find(p => p.barcode === barcode);
+      const known = barcode && state.products.find(product => product.barcode === barcode);
+
       if (known) {
-        scanData = {name:known.name,brand:known.brand||"",presentation:known.presentation||"",
-          category:getCategory(known.categoryId)?.name||"",barcode,existingProductId:known.id,
-          rawText:"Producto identificado por código de barras.",imageData:capturedImageData};
-      } else {
-        const extracted = extractProductData(await runLocalOCR(capturedImageData));
-        scanData = {...extracted,barcode:barcode||extracted.barcode,imageData:capturedImageData};
-      }
-      const endpoint = state.settings.aiEndpoint;
-      if (endpoint && navigator.onLine && !scanData.existingProductId) {
+        scanData = {
+          name: known.name,
+          brand: known.brand || "",
+          presentation: known.presentation || "",
+          category: getCategory(known.categoryId)?.name || "",
+          barcode,
+          existingProductId: known.id,
+          rawText: "Producto identificado mediante el código de barras guardado.",
+          imageData: capturedImageData,
+          confidence: 100,
+          source: "barcode"
+        };
+
+        setScanMethod("Producto identificado mediante código de barras.");
+      } else if (state.settings.aiEndpoint && navigator.onLine) {
+        setScanMethod("Analizando la fotografía con IA visual…");
+        setOCRProgress("Interpretando producto y etiqueta", 0.35);
+
         try {
-          const response = await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({image:capturedImageData,ocrText:scanData.rawText})});
-          if (response.ok) {
-            const ai = await response.json();
-            scanData = {...scanData,name:ai.name||scanData.name,brand:ai.brand||scanData.brand,
-              presentation:ai.presentation||scanData.presentation,category:ai.category||scanData.category,
-              barcode:ai.barcode||scanData.barcode};
-          }
-        } catch {}
+          scanData = {
+            ...(await callVisualAI(capturedImageData)),
+            barcode: barcode || "",
+            imageData: capturedImageData
+          };
+
+          setScanMethod("Resultado obtenido mediante IA visual.");
+        } catch (aiError) {
+          setScanMethod("La IA visual falló; usando OCR local como respaldo.", true);
+          toast(aiError.message, "error");
+
+          const local = extractProductData(await runLocalOCR(capturedImageData));
+          scanData = {
+            ...local,
+            barcode: barcode || local.barcode,
+            imageData: capturedImageData,
+            notes: "La IA visual no estuvo disponible. Se utilizó OCR local."
+          };
+        }
+      } else {
+        setScanMethod(
+          "Usando OCR local. Para logos y empaques decorativos configura la IA visual en Ajustes.",
+          true
+        );
+
+        const local = extractProductData(await runLocalOCR(capturedImageData));
+        scanData = {
+          ...local,
+          barcode: barcode || local.barcode,
+          imageData: capturedImageData
+        };
       }
-      setOCRProgress("Análisis completado",1);
+
+      setOCRProgress("Análisis completado", 1);
       renderOCRResult(scanData);
-      $("#createFromScanBtn").textContent = scanData.existingProductId ? "Registrar precio para este producto" : "Crear producto nuevo";
-      $("#createFromScanBtn").dataset.mode = scanData.existingProductId ? "price" : "product";
+
+      $("#createFromScanBtn").textContent =
+        scanData.existingProductId
+          ? "Registrar precio para este producto"
+          : "Crear producto nuevo";
+
+      $("#createFromScanBtn").dataset.mode =
+        scanData.existingProductId ? "price" : "product";
+
       $("#createFromScanBtn").classList.remove("hidden");
     } catch (error) {
-      $("#scanResult").innerHTML = `<div class="notice"><strong>No se pudo completar el OCR.</strong><br>${escapeHTML(error.message || "Intenta con una foto más cercana y bien iluminada.")}</div>`;
-      toast("No se pudo leer el texto de la imagen.","error");
+      $("#scanResult").innerHTML = `
+        <div class="notice">
+          <strong>No se pudo completar el reconocimiento.</strong><br>
+          ${escapeHTML(error.message || "Intenta con otra fotografía.")}
+        </div>`;
+
+      toast("No se pudo reconocer el producto.", "error");
     } finally {
       $("#analyzeBtn").disabled = false;
-      setTimeout(()=>$("#ocrProgressWrap").classList.add("hidden"),1300);
+      setTimeout(() => $("#ocrProgressWrap").classList.add("hidden"), 1300);
     }
   }
 
@@ -1131,8 +1615,18 @@
 
   async function saveAISettings(event) {
     event.preventDefault();
-    await put("settings", { id: "aiEndpoint", value: $("#aiEndpoint").value.trim() });
+
+    const endpoint = $("#aiEndpoint").value.trim().replace(/\/$/, "");
+    await put("settings", { id: "aiEndpoint", value: endpoint });
+
     await loadState();
+    updateAIStatus();
+    showEndpointMessage(
+      endpoint
+        ? "Endpoint guardado. Usa “Probar conexión” para verificarlo."
+        : "Se eliminó la configuración de IA visual.",
+      endpoint ? "success" : ""
+    );
     toast("Configuración guardada.", "success");
   }
 
@@ -1232,6 +1726,7 @@
     $("#storeForm").addEventListener("submit", handleStoreSubmit);
     $("#categoryForm").addEventListener("submit", handleCategorySubmit);
     $("#aiSettingsForm").addEventListener("submit", saveAISettings);
+    $("#testAIEndpointBtn").addEventListener("click", testAIEndpoint);
 
     document.addEventListener("click", handleDelegatedAction);
 
@@ -1260,6 +1755,11 @@
     $("#exportBtn").addEventListener("click", exportData);
     $("#importInput").addEventListener("change", (e) => e.target.files[0] && importData(e.target.files[0]));
     $("#clearDataBtn").addEventListener("click", clearAllData);
+    $("#finishPurchaseBtn").addEventListener("click", finishPurchase);
+    $("#newListBtn").addEventListener("click", async()=>{if(!state.shoppingItems.length||confirm("¿Limpiar la lista activa y comenzar una nueva?")){for(const i of state.shoppingItems)await remove("shoppingItems",i.id);await loadState();renderAll();}});
+    $("#exportSharedListBtn").addEventListener("click", exportSharedList);
+    $("#sharedListInput").addEventListener("change", e=>e.target.files[0]&&importSharedList(e.target.files[0]));
+
 
     window.addEventListener("online", updateConnectionStatus);
     window.addEventListener("offline", updateConnectionStatus);
