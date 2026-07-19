@@ -1,0 +1,28 @@
+MI COMPRA INTELIGENTE — v2.0.2 BLOQUEO DE MIGRACIÓN
+
+CORRIGE
+- La migración ya no puede repetirse si Firebase indica que fue completada.
+- Firebase es la fuente principal para saber si la migración terminó.
+- Si se pierde la marca local, se restaura automáticamente desde Firestore.
+- La ventana de migración no vuelve a mostrarse.
+- Se bloquea el botón de migración cuando ya terminó.
+- La sincronización local evita mostrar dos productos idénticos.
+- Se realiza una auditoría de duplicados en Firebase sin borrar automáticamente.
+
+ACTUALIZAR
+1. Descomprime el ZIP de corrección rápida.
+2. Reemplaza los archivos en GitHub.
+3. Haz Commit changes.
+4. Abre:
+   https://adryung21.github.io/comprasInteligenstes/?v=202
+5. Inicia sesión.
+6. La migración no debe aparecer.
+
+IMPORTANTE
+- No pulses migrar nuevamente.
+- No borres productos desde Firestore todavía.
+- No borres la caché.
+- Los productos que eliminaste desde la aplicación pueden seguir en Firebase,
+  porque borrar localmente no elimina el catálogo comunitario.
+- La próxima versión administrativa tendrá una herramienta segura para revisar,
+  unir y eliminar duplicados sin perder precios.

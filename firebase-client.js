@@ -185,9 +185,64 @@ async function chunkedSet(operations, chunkSize = 350) {
   }
 }
 
+
+async function getMigrationStatus() {
+  const user = auth.currentUser;
+  if (!user) return { completed: false };
+
+  const ref = doc(cloudDb, "users", user.uid, "migration", "v2");
+  const snapshot = await getDoc(ref);
+
+  if (!snapshot.exists()) {
+    return { completed: false };
+  }
+
+  const data = snapshot.data();
+  return {
+    completed: data.completed === true,
+    sourceVersion: data.sourceVersion || "",
+    targetVersion: data.targetVersion || "",
+    completedAtCloud: data.completedAtCloud?.toMillis?.() || null,
+    counts: data.counts || {}
+  };
+}
+
+async function acquireMigrationLock() {
+  const user = auth.currentUser;
+  if (!user) throw new Error("Debes iniciar sesión antes de migrar.");
+
+  const lockRef = doc(cloudDb, "users", user.uid, "migration", "v2");
+  const snapshot = await getDoc(lockRef);
+
+  if (snapshot.exists() && snapshot.data().completed === true) {
+    return { acquired: false, alreadyCompleted: true };
+  }
+
+  await setDoc(lockRef, {
+    status: "running",
+    startedAtCloud: serverTimestamp(),
+    startedBy: user.uid,
+    sourceVersion: "1.7",
+    targetVersion: APP_VERSION
+  }, { merge: true });
+
+  return { acquired: true, alreadyCompleted: false };
+}
+
 async function migrateLocalData(snapshot) {
   const user = auth.currentUser;
   if (!user) throw new Error("Debes iniciar sesión antes de migrar.");
+
+  const lock = await acquireMigrationLock();
+  if (!lock.acquired && lock.alreadyCompleted) {
+    return {
+      skipped: true,
+      reason: "already-completed",
+      role: currentProfile?.role || "user",
+      operations: 0,
+      counts: (await getMigrationStatus()).counts || {}
+    };
+  }
 
   const profile = currentProfile || await ensureProfile(user);
   const isAdmin = profile?.role === "admin";
@@ -364,9 +419,24 @@ async function migrateLocalData(snapshot) {
     options: { merge: true }
   });
 
-  await chunkedSet(operations);
+  try {
+    await chunkedSet(operations);
+  } catch (error) {
+    await setDoc(
+      doc(cloudDb, "users", user.uid, "migration", "v2"),
+      {
+        completed: false,
+        status: "failed",
+        failedAtCloud: serverTimestamp(),
+        errorCode: String(error?.code || "migration-error").slice(0, 100)
+      },
+      { merge: true }
+    );
+    throw error;
+  }
 
   return {
+    skipped: false,
     role: profile?.role || "user",
     operations: operations.length,
     counts: {
@@ -513,6 +583,59 @@ async function repairCloudTimestamps() {
   return {
     repairedDocuments: operations.length,
     skipped: false
+  };
+}
+
+
+function normalizeProductKey(product) {
+  const barcode = String(product?.barcode || "").trim();
+  if (barcode) return `barcode:${barcode}`;
+
+  return [
+    product?.name || "",
+    product?.brand || "",
+    product?.presentation || ""
+  ].map(value =>
+    String(value).trim().toLowerCase().replace(/\s+/g, " ")
+  ).join("|");
+}
+
+async function auditCloudProductDuplicates() {
+  const user = auth.currentUser;
+  if (!user) return { duplicateGroups: [], duplicateDocuments: 0 };
+
+  const snapshot = await getDocs(collection(cloudDb, "products"));
+  const groups = new Map();
+
+  for (const documentSnapshot of snapshot.docs) {
+    const product = { id: documentSnapshot.id, ...documentSnapshot.data() };
+    const key = normalizeProductKey(product);
+    if (!key || key === "||") continue;
+
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(product);
+  }
+
+  const duplicateGroups = [...groups.entries()]
+    .filter(([, products]) => products.length > 1)
+    .map(([key, products]) => ({
+      key,
+      count: products.length,
+      products: products.map(product => ({
+        id: product.id,
+        name: product.name || "",
+        brand: product.brand || "",
+        presentation: product.presentation || "",
+        barcode: product.barcode || ""
+      }))
+    }));
+
+  return {
+    duplicateGroups,
+    duplicateDocuments: duplicateGroups.reduce(
+      (sum, group) => sum + group.count - 1,
+      0
+    )
   };
 }
 
@@ -718,8 +841,10 @@ window.MCIFirebase = {
   },
 
   ensureProfile,
+  getMigrationStatus,
   migrateLocalData,
   repairCloudTimestamps,
+  auditCloudProductDuplicates,
   loadCloudData,
   mirrorPut,
   mirrorDelete

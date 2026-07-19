@@ -1357,7 +1357,8 @@
     $("#migrationProgress").classList.add("hidden");
     $("#startMigrationBtn").disabled = false;
     $("#startMigrationBtn").textContent =
-      migrated ? "Migrar nuevamente" : "Respaldar y migrar";
+      migrated ? "Migración completada" : "Respaldar y migrar";
+    $("#startMigrationBtn").disabled = migrated;
     $("#migrationModal").showModal();
   }
 
@@ -1395,6 +1396,27 @@
     button.disabled = true;
 
     try {
+      const cloudMigration = await firebaseBridge.getMigrationStatus();
+
+      if (cloudMigration.completed) {
+        cloudSyncPaused = true;
+        await put("settings", {
+          id: migrationKey(firebaseUser.uid),
+          value: {
+            completed: true,
+            restoredFromCloud: true,
+            completedAtCloud: cloudMigration.completedAtCloud,
+            counts: cloudMigration.counts || {}
+          }
+        });
+        cloudSyncPaused = false;
+        await loadState();
+        updateAccountUI();
+        closeModal("migrationModal");
+        toast("La migración ya estaba completada en Firebase. No se repitió.", "success");
+        return;
+      }
+
       setMigrationProgress("Generando respaldo local", 10);
       downloadMigrationBackup();
       await new Promise((resolve) => setTimeout(resolve, 400));
@@ -1406,7 +1428,13 @@
       setMigrationProgress("Enviando información protegida", 55);
       const result = await firebaseBridge.migrateLocalData(snapshot);
 
-      setMigrationProgress("Confirmando migración", 88);
+      if (result.skipped) {
+        setMigrationProgress("La migración ya estaba completada", 100);
+        toast("Firebase bloqueó la migración repetida.", "success");
+      } else {
+        setMigrationProgress("Confirmando migración", 88);
+      }
+
       await put("settings", {
         id: migrationKey(firebaseUser.uid),
         value: {
@@ -1449,11 +1477,50 @@
         await put("stores", { ...local, ...store });
       }
 
+      const seenProductKeys = new Set();
+
       for (const product of payload.products || []) {
-        const local = state.products.find(item => item.id === product.id) || {};
+        const normalizedKey = (() => {
+          const barcode = String(product.barcode || "").trim();
+          if (barcode) return `barcode:${barcode}`;
+
+          return [
+            product.name || "",
+            product.brand || "",
+            product.presentation || ""
+          ].map(value =>
+            String(value).trim().toLowerCase().replace(/\s+/g, " ")
+          ).join("|");
+        })();
+
+        if (seenProductKeys.has(normalizedKey)) continue;
+        seenProductKeys.add(normalizedKey);
+
+        const localById = state.products.find(item => item.id === product.id);
+        const localByIdentity = state.products.find(item => {
+          const itemBarcode = String(item.barcode || "").trim();
+          if (itemBarcode && product.barcode) {
+            return itemBarcode === String(product.barcode).trim();
+          }
+
+          const itemKey = [
+            item.name || "",
+            item.brand || "",
+            item.presentation || ""
+          ].map(value =>
+            String(value).trim().toLowerCase().replace(/\s+/g, " ")
+          ).join("|");
+
+          return itemKey === normalizedKey;
+        });
+
+        const local = localById || localByIdentity || {};
+        const targetId = local.id || product.id;
+
         await put("products", {
           ...local,
           ...product,
+          id: targetId,
           imageData: local.imageData || ""
         });
       }
@@ -1591,12 +1658,43 @@
     setAuthMessage("Sesión iniciada.", "success");
     updateAccountUI();
 
+    const cloudMigration = await firebaseBridge.getMigrationStatus();
+
+    if (cloudMigration.completed) {
+      cloudSyncPaused = true;
+      await put("settings", {
+        id: migrationKey(user.uid),
+        value: {
+          completed: true,
+          restoredFromCloud: true,
+          completedAtCloud: cloudMigration.completedAtCloud,
+          counts: cloudMigration.counts || {}
+        }
+      });
+      cloudSyncPaused = false;
+      await loadState();
+      updateAccountUI();
+    }
+
     await repairFirebaseDatesIfNeeded();
     await refreshCloudCatalog(false);
 
-    const migrated = Boolean(state.settings[migrationKey(user.uid)]);
+    const migrated =
+      cloudMigration.completed ||
+      Boolean(state.settings[migrationKey(user.uid)]);
+
     if (!migrated && localDataCount() > 0) {
       setTimeout(() => openMigrationModal(), 450);
+    }
+
+    if (firebaseProfile?.role === "admin") {
+      const audit = await firebaseBridge.auditCloudProductDuplicates();
+      if (audit.duplicateDocuments > 0) {
+        toast(
+          `Firebase contiene ${audit.duplicateDocuments} productos duplicados. No se migrará nuevamente; se revisarán en la próxima herramienta administrativa.`,
+          "error"
+        );
+      }
     }
   }
 

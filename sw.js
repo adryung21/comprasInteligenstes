@@ -1,4 +1,4 @@
-const CACHE_NAME = "mi-compra-inteligente-v2-0-1-fechas";
+const CACHE_NAME = "mi-compra-inteligente-v2-0-2-migration-lock";
 const SHARE_INBOX_CACHE = "mi-compra-inteligente-share-inbox-v1";
 
 const APP_ASSETS = [
