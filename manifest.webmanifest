@@ -1,7 +1,7 @@
 {
-  "name": "Mi Compra Inteligente",
-  "short_name": "Mi Compra",
-  "description": "Comparador de precios, listas de compras e intercambio completo de productos mediante Quick Share.",
+  "name": "Mi Compra Inteligente v2",
+  "short_name": "Compra Inteligente",
+  "description": "Comparador de precios con autenticación Firebase y migración protegida.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

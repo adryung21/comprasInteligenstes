@@ -896,11 +896,311 @@ textarea:focus {
   }
 }
 
+
+.auth-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top left, rgba(11,94,215,.20), transparent 40%),
+    linear-gradient(145deg, #edf4ff, #f8fafc 55%, #e9f8f3);
+}
+
+.auth-card {
+  width: min(460px, 100%);
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 26px;
+  background: rgba(255,255,255,.97);
+  box-shadow: 0 24px 70px rgba(23,43,77,.16);
+}
+
+.auth-brand {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.auth-brand img {
+  width: 68px;
+  height: 68px;
+  border-radius: 18px;
+}
+
+.auth-brand h1 {
+  margin: 4px 0 5px;
+  font-size: 1.55rem;
+}
+
+.auth-brand p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.btn-google {
+  background: white;
+  color: #202124;
+  border-color: var(--border);
+  box-shadow: 0 3px 10px rgba(23,43,77,.08);
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0;
+  color: var(--muted);
+  font-size: .8rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: var(--border);
+}
+
+.auth-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.text-button {
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  font-weight: 800;
+  padding: 8px;
+}
+
+.auth-message {
+  min-height: 40px;
+  margin-top: 13px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  background: var(--surface-alt);
+  color: var(--muted);
+  font-size: .85rem;
+  line-height: 1.4;
+}
+
+.auth-message.error {
+  background: #fff0f0;
+  color: #8f2020;
+}
+
+.auth-message.success {
+  background: #eaf8f3;
+  color: #08664f;
+}
+
+.version-label {
+  display: block;
+  margin-top: 13px;
+  text-align: center;
+  color: #98a2b3;
+  font-size: .7rem;
+}
+
+.user-chip {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 5px 6px 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: white;
+}
+
+.user-chip div {
+  display: grid;
+}
+
+.user-chip strong {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .82rem;
+}
+
+.user-chip span {
+  color: var(--muted);
+  font-size: .7rem;
+}
+
+.firebase-account-panel {
+  grid-column: 1 / -1;
+}
+
+.cloud-status-badge {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #fff2d6;
+  color: #745209;
+  font-size: .75rem;
+  font-weight: 900;
+}
+
+.cloud-status-badge.ready {
+  background: #e6f7f1;
+  color: #08664f;
+}
+
+.cloud-status-badge.error {
+  background: #fff0f0;
+  color: #9d2525;
+}
+
+.account-summary,
+.migration-counts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.account-summary div,
+.migration-counts div {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--surface-alt);
+}
+
+.account-summary span,
+.migration-counts span {
+  display: block;
+  color: var(--muted);
+  font-size: .75rem;
+}
+
+.account-summary strong,
+.migration-counts strong {
+  display: block;
+  margin-top: 5px;
+}
+
+.migration-intro {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.migration-safety {
+  display: grid;
+  gap: 4px;
+  padding: 13px;
+  margin: 14px 0;
+  border: 1px solid #b8dfd3;
+  border-radius: 13px;
+  background: #eaf8f3;
+  color: #08664f;
+}
+
+.migration-progress {
+  display: grid;
+  gap: 8px;
+  margin: 15px 0;
+}
+
+.migration-progress > div:first-child {
+  display: flex;
+  justify-content: space-between;
+}
+
+.progress-track {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e7ecf4;
+}
+
+.progress-track span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+  transition: width .2s ease;
+}
+
+@media (max-width: 720px) {
+  .user-chip div {
+    display: none;
+  }
+
+  .account-summary,
+  .migration-counts {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+}
+
+@media (max-width: 430px) {
+  .auth-card {
+    padding: 22px 18px;
+  }
+
+  .auth-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .top-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+
 </style>
   <title>Mi Compra Inteligente</title>
 </head>
 <body>
-  <div id="appShell">
+
+  <section id="authScreen" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <img src="icons/icon-192.png" alt="" />
+        <div>
+          <span class="eyebrow">Versión 2.0 Firebase</span>
+          <h1>Mi Compra Inteligente</h1>
+          <p>Inicia sesión para acceder al catálogo y conservar tus datos.</p>
+        </div>
+      </div>
+
+      <button id="googleLoginBtn" class="btn btn-google full-width" type="button">
+        Continuar con Google
+      </button>
+
+      <div class="auth-divider"><span>o utiliza tu correo</span></div>
+
+      <form id="authForm" class="stack-form">
+        <label>Correo electrónico
+          <input id="authEmail" type="email" autocomplete="email" required
+            placeholder="correo@ejemplo.com" />
+        </label>
+        <label>Contraseña
+          <input id="authPassword" type="password" autocomplete="current-password"
+            minlength="6" required placeholder="Mínimo 6 caracteres" />
+        </label>
+        <div class="auth-actions">
+          <button class="btn btn-primary" type="submit">Ingresar</button>
+          <button id="emailRegisterBtn" class="btn btn-secondary" type="button">Crear cuenta</button>
+        </div>
+        <button id="resetPasswordBtn" class="text-button" type="button">
+          Olvidé mi contraseña
+        </button>
+      </form>
+
+      <div id="authMessage" class="auth-message">Conectando con Firebase…</div>
+      <small class="version-label">Mi Compra Inteligente v2.0.0</small>
+    </div>
+  </section>
+
+  <div id="appShell" class="hidden">
     <header class="topbar">
       <div class="brand">
         <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAIAAADdvvtQAAAEM0lEQVR4nO3dwY3bRhiG4XGQW3JwGakqAdyFK3AXBlKVU4YPKSAHIYYSrbjc/f4ZkjPPc1jswZYI/O+OhhQBfvjl928N3uunow+AaxMQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEfn56AM4nb///G37H/z6x19jjuQSPnjkZdsRzTNiWj2gd6dzb+WM1g2oJJ17a2a0YkDl6dxbLaO1Auqazr11MloooP31bIy/5EVmskpAPU7OnfC3RQLannQ45q4vfn7zB7Qx4MLpjnmXE5o8oGdz7TTUwW93Bit+F9ZvnBOH8szMAb24HvSe8YuvP+zywXjTBnRIPRvvMmtD0wbEGOM20bP+CZ7WmOW2e0C6OVzXkjoGJJ1T6ZRRrz2Qes6m00S6BKSec+oxl/qA1HNm5dMpDkg951c7o8qA1HMVhZNyIZFIWUCWn2upmpcViIiAiNQE5PPrikqmZgUiIiAiAiIiICICIiIgIgIiIiAiAjrSx6+fjz6ElIAOc6vn6g0J6Bj33Vy6IQEd4LGY6zYkoNGetXLRhgQ01HYlV2xIQOO82sf3T1/GHEkhAQ0yZT1NQGPMWk8T0AAT19ME1Nvc9TSPe+pnzynV1etpVqBOFqmnCaiHdeppAiq3VD3NHqjW9FvmR1agMgvW0wRUZc16moBKLFtPmyygQ77NXrmeNlNAh9whung9bZqADrlDVD1tjoAOuUNUPTeXD+iQO0TV88O1AzrkDlH13Lt2QK+O6uPXz7UZqed/rh1Q2zewqobU8+jyAbVRDannRTME1Po3pJ5nJgmo9WxIPRvmCai19v3Tlz3b6je9pnq2TRXQTVVDe87gFq+nTRlQq2hotRsL323OgFrWkHr2mzag9t6G1PMmNU9tPvOzMt4UxGqbnvxRzjOvQDf7T+9Xq6fE/AG1oktE6nnREgG1ePzqeWaVgFoQgXo2LBRQ23ep+vG/dDqYOawV0M3+JtTzqhUDavvKUM8eiwbUXutDPTutG1D7byXPfmfb0gG1f1t5/MlO83+VwQZfZXAwAREREBEBEREQkZqA8s0845VMzQpEREBEygLyKXYtVfOyAhGpDMgidBWFkypegTR0frUzqv8I09CZlU+nyx5IQ+fUYy69NtEaOptOE6m5H2iDW4UO1/WPuXtAPyhpsDEfAuMCYkouJBIREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQERERARAREREBEBEREQEQER+QfAXF8Xgm48vAAAAABJRU5ErkJggg==" alt="" class="brand-icon" />
@@ -910,6 +1210,15 @@ textarea:focus {
         </div>
       </div>
       <div class="top-actions">
+        <div id="userChip" class="user-chip hidden">
+          <div>
+            <strong id="signedUserName">Usuario</strong>
+            <span id="signedUserRole">Cuenta personal</span>
+          </div>
+          <button id="logoutBtn" class="btn btn-secondary btn-sm" type="button">
+            Cerrar sesión
+          </button>
+        </div>
         <button id="installBtn" class="btn btn-primary hidden">Instalar</button>
         <button id="quickAddBtn" class="btn btn-accent">+ Precio</button>
       </div>
@@ -1184,6 +1493,33 @@ textarea:focus {
         </div>
 
         <div class="settings-grid">
+          <section class="panel firebase-account-panel">
+            <div class="panel-header">
+              <div>
+                <h3>Cuenta y sincronización</h3>
+                <p>Firebase mantiene el catálogo y tus datos personales.</p>
+              </div>
+              <span id="cloudStatusBadge" class="cloud-status-badge">Sin conectar</span>
+            </div>
+
+            <div class="account-summary">
+              <div><span>Usuario</span><strong id="settingsUserEmail">—</strong></div>
+              <div><span>Perfil</span><strong id="settingsUserRole">—</strong></div>
+              <div><span>Migración local</span><strong id="settingsMigrationStatus">Pendiente</strong></div>
+            </div>
+
+            <div class="inline-actions">
+              <button id="openMigrationBtn" class="btn btn-primary" type="button">
+                Revisar migración
+              </button>
+              <button id="refreshCloudBtn" class="btn btn-secondary" type="button">
+                Actualizar catálogo
+              </button>
+            </div>
+
+            <small>Las fotografías permanecen solo en este dispositivo y no se suben a Firebase.</small>
+          </section>
+
           <section class="panel">
             <div class="panel-header">
               <div><h3>Tiendas</h3><p>Lugares donde registras precios.</p></div>
@@ -1235,7 +1571,7 @@ textarea:focus {
 
     <footer>
       <span>Mi Compra Inteligente</span>
-      <span>Datos guardados localmente en este dispositivo</span>
+      <span id="footerStorageStatus">Datos locales protegidos · Firebase pendiente</span>
     </footer>
   </div>
 
@@ -1362,6 +1698,54 @@ textarea:focus {
     </form>
   </dialog>
 
+  <dialog id="migrationModal" class="modal">
+    <form method="dialog">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow">Migración protegida</span>
+          <h3>Actualizar datos locales a Firebase</h3>
+        </div>
+        <button class="icon-btn" type="button" data-close="migrationModal">×</button>
+      </div>
+
+      <p class="migration-intro">
+        Antes de migrar se descargará un respaldo JSON. La base local y las fotografías
+        permanecerán en el dispositivo.
+      </p>
+
+      <div class="migration-counts">
+        <div><span>Productos</span><strong id="migrationProducts">0</strong></div>
+        <div><span>Tiendas</span><strong id="migrationStores">0</strong></div>
+        <div><span>Categorías</span><strong id="migrationCategories">0</strong></div>
+        <div><span>Precios</span><strong id="migrationPrices">0</strong></div>
+        <div><span>Lista activa</span><strong id="migrationShopping">0</strong></div>
+        <div><span>Historial</span><strong id="migrationHistory">0</strong></div>
+      </div>
+
+      <div class="migration-safety">
+        <strong>Protección aplicada</strong>
+        <span>Las imágenes se excluyen de Firebase y continúan privadas en IndexedDB.</span>
+      </div>
+
+      <div id="migrationProgress" class="migration-progress hidden">
+        <div>
+          <span id="migrationProgressText">Preparando…</span>
+          <strong id="migrationProgressPercent">0%</strong>
+        </div>
+        <div class="progress-track"><span id="migrationProgressBar"></span></div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" type="button" data-close="migrationModal">
+          Hacerlo después
+        </button>
+        <button id="startMigrationBtn" class="btn btn-primary" type="button">
+          Respaldar y migrar
+        </button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="storeModal" class="modal small-modal">
     <form id="storeForm" method="dialog">
       <div class="modal-header">
@@ -1396,6 +1780,7 @@ textarea:focus {
 
   <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
+  <script type="module" src="firebase-client.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" crossorigin="anonymous"></script>
 <script>
 (() => {
@@ -1414,6 +1799,10 @@ textarea:focus {
   let scanData = null;
   let productEditingImage = "";
   let pendingReceivedPackage = null;
+  let firebaseBridge = null;
+  let firebaseUser = null;
+  let firebaseProfile = null;
+  let cloudSyncPaused = false;
 
   const state = {
     products: [],
@@ -1576,24 +1965,45 @@ textarea:focus {
       if (index >= 0) rows[index] = value;
       else rows.push(value);
       writeFallbackStore(storeName, rows);
+      mirrorLocalPut(storeName, value);
       return Promise.resolve(value);
     }
     return new Promise((resolve, reject) => {
       const request = tx(storeName, "readwrite").put(value);
       request.onsuccess = () => resolve(value);
       request.onerror = () => reject(request.error);
+    }).then((result) => {
+      mirrorLocalPut(storeName, value);
+      return result;
+    });
+  }
+
+  function mirrorLocalPut(storeName, value) {
+    if (cloudSyncPaused || !firebaseBridge?.currentUser) return;
+    firebaseBridge.mirrorPut(storeName, value).catch((error) => {
+      console.warn(`No se pudo sincronizar ${storeName}:`, error);
+    });
+  }
+
+  function mirrorLocalDelete(storeName, id) {
+    if (cloudSyncPaused || !firebaseBridge?.currentUser) return;
+    firebaseBridge.mirrorDelete(storeName, id).catch((error) => {
+      console.warn(`No se pudo eliminar ${storeName} en Firebase:`, error);
     });
   }
 
   function remove(storeName, id) {
     if (storageBackend !== "indexeddb") {
       writeFallbackStore(storeName, readFallbackStore(storeName).filter((row) => row.id !== id));
+      mirrorLocalDelete(storeName, id);
       return Promise.resolve();
     }
     return new Promise((resolve, reject) => {
       const request = tx(storeName, "readwrite").delete(id);
       request.onsuccess = () => resolve();
       request.onerror = () => reject(request.error);
+    }).then(() => {
+      mirrorLocalDelete(storeName, id);
     });
   }
 
@@ -2622,6 +3032,374 @@ textarea:focus {
     });
   }
 
+  function setAuthMessage(message, type = "") {
+    const box = $("#authMessage");
+    if (!box) return;
+    box.textContent = message;
+    box.className = `auth-message ${type}`.trim();
+  }
+
+  function firebaseErrorMessage(error) {
+    const code = String(error?.code || "");
+    const messages = {
+      "auth/invalid-credential": "Correo o contraseña incorrectos.",
+      "auth/user-not-found": "No existe una cuenta con ese correo.",
+      "auth/wrong-password": "La contraseña es incorrecta.",
+      "auth/email-already-in-use": "Ese correo ya tiene una cuenta.",
+      "auth/weak-password": "La contraseña debe tener al menos 6 caracteres.",
+      "auth/popup-closed-by-user": "Se cerró la ventana de Google antes de terminar.",
+      "auth/popup-blocked": "El navegador bloqueó la ventana de Google.",
+      "auth/network-request-failed": "No se pudo conectar. Revisa el internet.",
+      "permission-denied": "Firebase rechazó la operación. Revisa las reglas de Firestore."
+    };
+    return messages[code] || error?.message || "Ocurrió un error de Firebase.";
+  }
+
+  function waitForFirebaseBridge(timeout = 25000) {
+    if (window.MCIFirebase) return Promise.resolve(window.MCIFirebase);
+
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        window.removeEventListener("mci-firebase-ready", ready);
+        reject(new Error("Firebase tardó demasiado en cargar."));
+      }, timeout);
+
+      function ready() {
+        clearTimeout(timer);
+        resolve(window.MCIFirebase);
+      }
+
+      window.addEventListener("mci-firebase-ready", ready, { once: true });
+    });
+  }
+
+  function migrationKey(uid) {
+    return `firebaseMigrationV2_${uid}`;
+  }
+
+  function localMigrationSnapshot() {
+    return {
+      products: state.products,
+      stores: state.stores,
+      categories: state.categories,
+      prices: state.prices,
+      shoppingItems: state.shoppingItems,
+      purchaseHistory: state.purchaseHistory,
+      sharedLists: state.sharedLists,
+      settings: state.settings
+    };
+  }
+
+  function localDataCount() {
+    return state.products.length +
+      state.stores.length +
+      state.categories.length +
+      state.prices.length +
+      state.shoppingItems.length +
+      state.purchaseHistory.length;
+  }
+
+  function updateAccountUI() {
+    const signedIn = Boolean(firebaseUser);
+    $("#userChip")?.classList.toggle("hidden", !signedIn);
+    if (!signedIn) return;
+
+    const role = firebaseProfile?.role === "admin" ? "Administrador" : "Usuario";
+    $("#signedUserName").textContent =
+      firebaseUser.displayName || firebaseUser.email || "Usuario";
+    $("#signedUserRole").textContent = role;
+    $("#settingsUserEmail").textContent = firebaseUser.email || "—";
+    $("#settingsUserRole").textContent = role;
+    $("#cloudStatusBadge").textContent = "Firebase conectado";
+    $("#cloudStatusBadge").className = "cloud-status-badge ready";
+    $("#footerStorageStatus").textContent =
+      "IndexedDB local + Firebase · Fotografías privadas en este dispositivo";
+
+    const migrated = Boolean(state.settings[migrationKey(firebaseUser.uid)]);
+    $("#settingsMigrationStatus").textContent =
+      migrated ? "Completada" : "Pendiente";
+  }
+
+  function populateMigrationModal() {
+    $("#migrationProducts").textContent = state.products.length;
+    $("#migrationStores").textContent = state.stores.length;
+    $("#migrationCategories").textContent = state.categories.length;
+    $("#migrationPrices").textContent = state.prices.length;
+    $("#migrationShopping").textContent = state.shoppingItems.length;
+    $("#migrationHistory").textContent = state.purchaseHistory.length;
+  }
+
+  function openMigrationModal(force = false) {
+    if (!firebaseUser) {
+      toast("Primero inicia sesión.", "error");
+      return;
+    }
+
+    const migrated = Boolean(state.settings[migrationKey(firebaseUser.uid)]);
+    if (migrated && !force) return;
+
+    populateMigrationModal();
+    $("#migrationProgress").classList.add("hidden");
+    $("#startMigrationBtn").disabled = false;
+    $("#startMigrationBtn").textContent =
+      migrated ? "Migrar nuevamente" : "Respaldar y migrar";
+    $("#migrationModal").showModal();
+  }
+
+  function setMigrationProgress(message, percent) {
+    $("#migrationProgress").classList.remove("hidden");
+    $("#migrationProgressText").textContent = message;
+    $("#migrationProgressPercent").textContent = `${percent}%`;
+    $("#migrationProgressBar").style.width = `${percent}%`;
+  }
+
+  function downloadMigrationBackup() {
+    const snapshot = {
+      app: "Mi Compra Inteligente",
+      version: "1.7-backup-before-firebase",
+      createdAt: new Date().toISOString(),
+      data: localMigrationSnapshot()
+    };
+
+    const blob = new Blob(
+      [JSON.stringify(snapshot, null, 2)],
+      { type: "application/json" }
+    );
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `mi-compra-respaldo-antes-firebase-${today()}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function startFirebaseMigration() {
+    if (!firebaseUser || !firebaseBridge) return;
+
+    const button = $("#startMigrationBtn");
+    button.disabled = true;
+
+    try {
+      setMigrationProgress("Generando respaldo local", 10);
+      downloadMigrationBackup();
+      await new Promise((resolve) => setTimeout(resolve, 400));
+
+      const snapshot = localMigrationSnapshot();
+      setMigrationProgress("Preparando productos y precios", 30);
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      setMigrationProgress("Enviando información protegida", 55);
+      const result = await firebaseBridge.migrateLocalData(snapshot);
+
+      setMigrationProgress("Confirmando migración", 88);
+      await put("settings", {
+        id: migrationKey(firebaseUser.uid),
+        value: {
+          completed: true,
+          completedAt: new Date().toISOString(),
+          role: result.role,
+          counts: result.counts
+        }
+      });
+
+      await loadState();
+      updateAccountUI();
+      setMigrationProgress("Migración completada", 100);
+
+      setTimeout(() => closeModal("migrationModal"), 900);
+      toast(
+        `Migración completada: ${result.counts.products} productos y ${result.counts.prices} precios.`,
+        "success"
+      );
+    } catch (error) {
+      console.error(error);
+      setMigrationProgress("No se pudo completar", 0);
+      toast(firebaseErrorMessage(error), "error");
+      button.disabled = false;
+    }
+  }
+
+  async function mergeCloudData(payload) {
+    if (!payload) return;
+
+    cloudSyncPaused = true;
+    try {
+      for (const category of payload.categories || []) {
+        const local = state.categories.find(item => item.id === category.id) || {};
+        await put("categories", { ...local, ...category });
+      }
+
+      for (const store of payload.stores || []) {
+        const local = state.stores.find(item => item.id === store.id) || {};
+        await put("stores", { ...local, ...store });
+      }
+
+      for (const product of payload.products || []) {
+        const local = state.products.find(item => item.id === product.id) || {};
+        await put("products", {
+          ...local,
+          ...product,
+          imageData: local.imageData || ""
+        });
+      }
+
+      for (const price of payload.verifiedPrices || []) {
+        await put("prices", {
+          id: `cloud_${price.id}`,
+          productId: price.productId,
+          storeId: price.storeId,
+          price: Number(price.price),
+          date: price.date || today(),
+          note: price.note || "Precio oficial verificado",
+          createdAt: price.createdAt || price.verifiedAt || Date.now(),
+          cloudVerified: true
+        });
+      }
+
+      for (const price of payload.privatePrices || []) {
+        const exists = state.prices.some(item => item.id === price.id);
+        if (!exists) await put("prices", { ...price, cloudPrivate: true });
+      }
+
+      for (const item of payload.shoppingItems || []) {
+        await put("shoppingItems", item);
+      }
+
+      for (const record of payload.purchaseHistory || []) {
+        await put("purchaseHistory", record);
+      }
+
+      for (const list of payload.sharedLists || []) {
+        await put("sharedLists", list);
+      }
+
+      await loadState();
+      renderAll();
+      updateAccountUI();
+    } finally {
+      cloudSyncPaused = false;
+    }
+  }
+
+  async function refreshCloudCatalog(showToast = true) {
+    if (!firebaseBridge?.currentUser) return;
+
+    try {
+      $("#cloudStatusBadge").textContent = "Sincronizando…";
+      const payload = await firebaseBridge.loadCloudData();
+      await mergeCloudData(payload);
+      $("#cloudStatusBadge").textContent = "Firebase conectado";
+      $("#cloudStatusBadge").className = "cloud-status-badge ready";
+      if (showToast) {
+        toast("Catálogo y datos personales actualizados.", "success");
+      }
+    } catch (error) {
+      console.error(error);
+      $("#cloudStatusBadge").textContent = "Error de sincronización";
+      $("#cloudStatusBadge").className = "cloud-status-badge error";
+      if (showToast) toast(firebaseErrorMessage(error), "error");
+    }
+  }
+
+  async function handleAuthenticatedUser({ user, profile, error }) {
+    if (error) {
+      setAuthMessage(firebaseErrorMessage(error), "error");
+      return;
+    }
+
+    firebaseUser = user;
+    firebaseProfile = profile;
+
+    if (!user) {
+      $("#appShell").classList.add("hidden");
+      $("#authScreen").classList.remove("hidden");
+      setAuthMessage("Inicia sesión para continuar.");
+      return;
+    }
+
+    $("#authScreen").classList.add("hidden");
+    $("#appShell").classList.remove("hidden");
+    setAuthMessage("Sesión iniciada.", "success");
+    updateAccountUI();
+
+    await refreshCloudCatalog(false);
+
+    const migrated = Boolean(state.settings[migrationKey(user.uid)]);
+    if (!migrated && localDataCount() > 0) {
+      setTimeout(() => openMigrationModal(), 450);
+    }
+  }
+
+  async function loginWithGoogle() {
+    setAuthMessage("Abriendo acceso con Google…");
+    try {
+      await firebaseBridge.loginGoogle();
+    } catch (error) {
+      setAuthMessage(firebaseErrorMessage(error), "error");
+    }
+  }
+
+  async function loginWithEmail(event) {
+    event.preventDefault();
+    const email = $("#authEmail").value.trim();
+    const password = $("#authPassword").value;
+    setAuthMessage("Verificando cuenta…");
+
+    try {
+      await firebaseBridge.loginEmail(email, password);
+    } catch (error) {
+      setAuthMessage(firebaseErrorMessage(error), "error");
+    }
+  }
+
+  async function registerWithEmail() {
+    const email = $("#authEmail").value.trim();
+    const password = $("#authPassword").value;
+
+    if (!email || password.length < 6) {
+      setAuthMessage(
+        "Escribe un correo válido y una contraseña de al menos 6 caracteres.",
+        "error"
+      );
+      return;
+    }
+
+    setAuthMessage("Creando cuenta…");
+    try {
+      await firebaseBridge.registerEmail(email, password);
+      setAuthMessage("Cuenta creada correctamente.", "success");
+    } catch (error) {
+      setAuthMessage(firebaseErrorMessage(error), "error");
+    }
+  }
+
+  async function resetFirebasePassword() {
+    const email = $("#authEmail").value.trim();
+
+    if (!email) {
+      setAuthMessage(
+        "Escribe tu correo para enviar el enlace de recuperación.",
+        "error"
+      );
+      return;
+    }
+
+    try {
+      await firebaseBridge.resetPassword(email);
+      setAuthMessage(
+        "Revisa tu correo. Se envió el enlace de recuperación.",
+        "success"
+      );
+    } catch (error) {
+      setAuthMessage(firebaseErrorMessage(error), "error");
+    }
+  }
+
+  async function logoutFirebase() {
+    if (!confirm("¿Cerrar sesión en este dispositivo?")) return;
+    await firebaseBridge.logout();
+  }
+
   function renderAll() {
     refreshSelects();
     renderDashboard();
@@ -2735,11 +3513,34 @@ textarea:focus {
       updatedAt: Date.now()
     };
 
-    const duplicate = state.products.find((x) =>
-      x.id !== id && product.barcode && x.barcode === product.barcode
-    );
+    const normalizedProduct = [
+      product.name,
+      product.brand,
+      product.presentation
+    ].map((value) =>
+      String(value || "").trim().toLowerCase().replace(/\s+/g, " ")
+    ).join("|");
+
+    const duplicate = state.products.find((candidate) => {
+      if (candidate.id === id) return false;
+
+      const barcodeMatch =
+        product.barcode &&
+        String(candidate.barcode || "").trim() === product.barcode;
+
+      const normalizedCandidate = [
+        candidate.name,
+        candidate.brand,
+        candidate.presentation
+      ].map((value) =>
+        String(value || "").trim().toLowerCase().replace(/\s+/g, " ")
+      ).join("|");
+
+      return barcodeMatch || normalizedCandidate === normalizedProduct;
+    });
+
     if (duplicate) {
-      toast("Ya existe un producto con ese código de barras.", "error");
+      toast(`Ese producto ya existe: ${duplicate.name}.`, "error");
       return;
     }
 
@@ -3613,6 +4414,15 @@ textarea:focus {
   }
 
   function bindEvents() {
+    $("#googleLoginBtn").addEventListener("click", loginWithGoogle);
+    $("#authForm").addEventListener("submit", loginWithEmail);
+    $("#emailRegisterBtn").addEventListener("click", registerWithEmail);
+    $("#resetPasswordBtn").addEventListener("click", resetFirebasePassword);
+    $("#logoutBtn").addEventListener("click", logoutFirebase);
+    $("#startMigrationBtn").addEventListener("click", startFirebaseMigration);
+    $("#openMigrationBtn").addEventListener("click", () => openMigrationModal(true));
+    $("#refreshCloudBtn").addEventListener("click", () => refreshCloudCatalog(true));
+
     $$(".nav-btn").forEach((btn) => btn.addEventListener("click", () => navigate(btn.dataset.view)));
     $$("[data-view-target]").forEach((btn) => btn.addEventListener("click", () => navigate(btn.dataset.viewTarget)));
     $$("[data-open]").forEach((btn) => btn.addEventListener("click", () => openModal(btn.dataset.open)));
@@ -3689,7 +4499,11 @@ textarea:focus {
     try {
       db = await openDB();
       await loadState();
+
+      cloudSyncPaused = true;
       await seedDefaults();
+      cloudSyncPaused = false;
+
       bindEvents();
       renderAll();
       updateConnectionStatus();
@@ -3697,10 +4511,14 @@ textarea:focus {
       configureFileLaunchReception();
       await consumeSharedTargetPayload();
       $("#priceDate").value = today();
+
+      setAuthMessage("Conectando con Firebase…");
+      firebaseBridge = await waitForFirebaseBridge();
+      firebaseBridge.onAuthChange(handleAuthenticatedUser);
     } catch (error) {
       console.error(error);
-      toast("No se pudo iniciar la base de datos local.", "error");
-      $("#connectionStatus").textContent = "Error de almacenamiento";
+      setAuthMessage(firebaseErrorMessage(error), "error");
+      $("#connectionStatus").textContent = "Error de inicio";
     }
   }
 

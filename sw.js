@@ -1,4 +1,4 @@
-const CACHE_NAME = "mi-compra-inteligente-v1-7-quick-share";
+const CACHE_NAME = "mi-compra-inteligente-v2-0-firebase";
 const SHARE_INBOX_CACHE = "mi-compra-inteligente-share-inbox-v1";
 
 const APP_ASSETS = [
@@ -6,6 +6,8 @@ const APP_ASSETS = [
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./firebase-client.js",
+  "./firebase-config.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",

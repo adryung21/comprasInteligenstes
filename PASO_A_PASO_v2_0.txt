@@ -1,0 +1,38 @@
+MI COMPRA INTELIGENTE — v2.0 FIREBASE
+
+ADMINISTRADOR
+adrian90.2y@gmail.com
+
+PASO 1 — PUBLICAR FIRESTORE RULES
+1. Abre Firebase Console.
+2. Entra en Firestore.
+3. Abre la pestaña Reglas.
+4. Abre el archivo firestore.rules incluido.
+5. Copia todo su contenido.
+6. Reemplaza las reglas actuales.
+7. Pulsa Publicar.
+
+PASO 2 — ACTUALIZAR GITHUB
+1. Descomprime el ZIP PUBLICAR_GITHUB.
+2. Abre el repositorio comprasInteligenstes.
+3. Add file → Upload files.
+4. Sube todos los archivos y reemplaza los anteriores.
+5. Commit changes.
+
+PASO 3 — PRIMER INGRESO
+1. Abre:
+   https://adryung21.github.io/comprasInteligenstes/?v=200
+2. Pulsa Continuar con Google.
+3. Usa adrian90.2y@gmail.com.
+4. La aplicación reconocerá ese correo como Administrador.
+5. En la ventana de migración pulsa Respaldar y migrar.
+6. Espera hasta 100%.
+
+NO HAGAS TODAVÍA
+- No borres IndexedDB.
+- No desinstales la PWA antes de comprobar la migración.
+- No actives Firebase Storage.
+- No compartas contraseñas ni claves privadas.
+
+FOTOGRAFÍAS
+Las fotografías siguen únicamente en IndexedDB. No se suben a Firebase.

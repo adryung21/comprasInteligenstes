@@ -14,6 +14,10 @@
   let scanData = null;
   let productEditingImage = "";
   let pendingReceivedPackage = null;
+  let firebaseBridge = null;
+  let firebaseUser = null;
+  let firebaseProfile = null;
+  let cloudSyncPaused = false;
 
   const state = {
     products: [],
@@ -176,24 +180,45 @@
       if (index >= 0) rows[index] = value;
       else rows.push(value);
       writeFallbackStore(storeName, rows);
+      mirrorLocalPut(storeName, value);
       return Promise.resolve(value);
     }
     return new Promise((resolve, reject) => {
       const request = tx(storeName, "readwrite").put(value);
       request.onsuccess = () => resolve(value);
       request.onerror = () => reject(request.error);
+    }).then((result) => {
+      mirrorLocalPut(storeName, value);
+      return result;
+    });
+  }
+
+  function mirrorLocalPut(storeName, value) {
+    if (cloudSyncPaused || !firebaseBridge?.currentUser) return;
+    firebaseBridge.mirrorPut(storeName, value).catch((error) => {
+      console.warn(`No se pudo sincronizar ${storeName}:`, error);
+    });
+  }
+
+  function mirrorLocalDelete(storeName, id) {
+    if (cloudSyncPaused || !firebaseBridge?.currentUser) return;
+    firebaseBridge.mirrorDelete(storeName, id).catch((error) => {
+      console.warn(`No se pudo eliminar ${storeName} en Firebase:`, error);
     });
   }
 
   function remove(storeName, id) {
     if (storageBackend !== "indexeddb") {
       writeFallbackStore(storeName, readFallbackStore(storeName).filter((row) => row.id !== id));
+      mirrorLocalDelete(storeName, id);
       return Promise.resolve();
     }
     return new Promise((resolve, reject) => {
       const request = tx(storeName, "readwrite").delete(id);
       request.onsuccess = () => resolve();
       request.onerror = () => reject(request.error);
+    }).then(() => {
+      mirrorLocalDelete(storeName, id);
     });
   }
 
@@ -1222,6 +1247,374 @@
     });
   }
 
+  function setAuthMessage(message, type = "") {
+    const box = $("#authMessage");
+    if (!box) return;
+    box.textContent = message;
+    box.className = `auth-message ${type}`.trim();
+  }
+
+  function firebaseErrorMessage(error) {
+    const code = String(error?.code || "");
+    const messages = {
+      "auth/invalid-credential": "Correo o contraseña incorrectos.",
+      "auth/user-not-found": "No existe una cuenta con ese correo.",
+      "auth/wrong-password": "La contraseña es incorrecta.",
+      "auth/email-already-in-use": "Ese correo ya tiene una cuenta.",
+      "auth/weak-password": "La contraseña debe tener al menos 6 caracteres.",
+      "auth/popup-closed-by-user": "Se cerró la ventana de Google antes de terminar.",
+      "auth/popup-blocked": "El navegador bloqueó la ventana de Google.",
+      "auth/network-request-failed": "No se pudo conectar. Revisa el internet.",
+      "permission-denied": "Firebase rechazó la operación. Revisa las reglas de Firestore."
+    };
+    return messages[code] || error?.message || "Ocurrió un error de Firebase.";
+  }
+
+  function waitForFirebaseBridge(timeout = 25000) {
+    if (window.MCIFirebase) return Promise.resolve(window.MCIFirebase);
+
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        window.removeEventListener("mci-firebase-ready", ready);
+        reject(new Error("Firebase tardó demasiado en cargar."));
+      }, timeout);
+
+      function ready() {
+        clearTimeout(timer);
+        resolve(window.MCIFirebase);
+      }
+
+      window.addEventListener("mci-firebase-ready", ready, { once: true });
+    });
+  }
+
+  function migrationKey(uid) {
+    return `firebaseMigrationV2_${uid}`;
+  }
+
+  function localMigrationSnapshot() {
+    return {
+      products: state.products,
+      stores: state.stores,
+      categories: state.categories,
+      prices: state.prices,
+      shoppingItems: state.shoppingItems,
+      purchaseHistory: state.purchaseHistory,
+      sharedLists: state.sharedLists,
+      settings: state.settings
+    };
+  }
+
+  function localDataCount() {
+    return state.products.length +
+      state.stores.length +
+      state.categories.length +
+      state.prices.length +
+      state.shoppingItems.length +
+      state.purchaseHistory.length;
+  }
+
+  function updateAccountUI() {
+    const signedIn = Boolean(firebaseUser);
+    $("#userChip")?.classList.toggle("hidden", !signedIn);
+    if (!signedIn) return;
+
+    const role = firebaseProfile?.role === "admin" ? "Administrador" : "Usuario";
+    $("#signedUserName").textContent =
+      firebaseUser.displayName || firebaseUser.email || "Usuario";
+    $("#signedUserRole").textContent = role;
+    $("#settingsUserEmail").textContent = firebaseUser.email || "—";
+    $("#settingsUserRole").textContent = role;
+    $("#cloudStatusBadge").textContent = "Firebase conectado";
+    $("#cloudStatusBadge").className = "cloud-status-badge ready";
+    $("#footerStorageStatus").textContent =
+      "IndexedDB local + Firebase · Fotografías privadas en este dispositivo";
+
+    const migrated = Boolean(state.settings[migrationKey(firebaseUser.uid)]);
+    $("#settingsMigrationStatus").textContent =
+      migrated ? "Completada" : "Pendiente";
+  }
+
+  function populateMigrationModal() {
+    $("#migrationProducts").textContent = state.products.length;
+    $("#migrationStores").textContent = state.stores.length;
+    $("#migrationCategories").textContent = state.categories.length;
+    $("#migrationPrices").textContent = state.prices.length;
+    $("#migrationShopping").textContent = state.shoppingItems.length;
+    $("#migrationHistory").textContent = state.purchaseHistory.length;
+  }
+
+  function openMigrationModal(force = false) {
+    if (!firebaseUser) {
+      toast("Primero inicia sesión.", "error");
+      return;
+    }
+
+    const migrated = Boolean(state.settings[migrationKey(firebaseUser.uid)]);
+    if (migrated && !force) return;
+
+    populateMigrationModal();
+    $("#migrationProgress").classList.add("hidden");
+    $("#startMigrationBtn").disabled = false;
+    $("#startMigrationBtn").textContent =
+      migrated ? "Migrar nuevamente" : "Respaldar y migrar";
+    $("#migrationModal").showModal();
+  }
+
+  function setMigrationProgress(message, percent) {
+    $("#migrationProgress").classList.remove("hidden");
+    $("#migrationProgressText").textContent = message;
+    $("#migrationProgressPercent").textContent = `${percent}%`;
+    $("#migrationProgressBar").style.width = `${percent}%`;
+  }
+
+  function downloadMigrationBackup() {
+    const snapshot = {
+      app: "Mi Compra Inteligente",
+      version: "1.7-backup-before-firebase",
+      createdAt: new Date().toISOString(),
+      data: localMigrationSnapshot()
+    };
+
+    const blob = new Blob(
+      [JSON.stringify(snapshot, null, 2)],
+      { type: "application/json" }
+    );
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `mi-compra-respaldo-antes-firebase-${today()}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function startFirebaseMigration() {
+    if (!firebaseUser || !firebaseBridge) return;
+
+    const button = $("#startMigrationBtn");
+    button.disabled = true;
+
+    try {
+      setMigrationProgress("Generando respaldo local", 10);
+      downloadMigrationBackup();
+      await new Promise((resolve) => setTimeout(resolve, 400));
+
+      const snapshot = localMigrationSnapshot();
+      setMigrationProgress("Preparando productos y precios", 30);
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      setMigrationProgress("Enviando información protegida", 55);
+      const result = await firebaseBridge.migrateLocalData(snapshot);
+
+      setMigrationProgress("Confirmando migración", 88);
+      await put("settings", {
+        id: migrationKey(firebaseUser.uid),
+        value: {
+          completed: true,
+          completedAt: new Date().toISOString(),
+          role: result.role,
+          counts: result.counts
+        }
+      });
+
+      await loadState();
+      updateAccountUI();
+      setMigrationProgress("Migración completada", 100);
+
+      setTimeout(() => closeModal("migrationModal"), 900);
+      toast(
+        `Migración completada: ${result.counts.products} productos y ${result.counts.prices} precios.`,
+        "success"
+      );
+    } catch (error) {
+      console.error(error);
+      setMigrationProgress("No se pudo completar", 0);
+      toast(firebaseErrorMessage(error), "error");
+      button.disabled = false;
+    }
+  }
+
+  async function mergeCloudData(payload) {
+    if (!payload) return;
+
+    cloudSyncPaused = true;
+    try {
+      for (const category of payload.categories || []) {
+        const local = state.categories.find(item => item.id === category.id) || {};
+        await put("categories", { ...local, ...category });
+      }
+
+      for (const store of payload.stores || []) {
+        const local = state.stores.find(item => item.id === store.id) || {};
+        await put("stores", { ...local, ...store });
+      }
+
+      for (const product of payload.products || []) {
+        const local = state.products.find(item => item.id === product.id) || {};
+        await put("products", {
+          ...local,
+          ...product,
+          imageData: local.imageData || ""
+        });
+      }
+
+      for (const price of payload.verifiedPrices || []) {
+        await put("prices", {
+          id: `cloud_${price.id}`,
+          productId: price.productId,
+          storeId: price.storeId,
+          price: Number(price.price),
+          date: price.date || today(),
+          note: price.note || "Precio oficial verificado",
+          createdAt: price.createdAt || price.verifiedAt || Date.now(),
+          cloudVerified: true
+        });
+      }
+
+      for (const price of payload.privatePrices || []) {
+        const exists = state.prices.some(item => item.id === price.id);
+        if (!exists) await put("prices", { ...price, cloudPrivate: true });
+      }
+
+      for (const item of payload.shoppingItems || []) {
+        await put("shoppingItems", item);
+      }
+
+      for (const record of payload.purchaseHistory || []) {
+        await put("purchaseHistory", record);
+      }
+
+      for (const list of payload.sharedLists || []) {
+        await put("sharedLists", list);
+      }
+
+      await loadState();
+      renderAll();
+      updateAccountUI();
+    } finally {
+      cloudSyncPaused = false;
+    }
+  }
+
+  async function refreshCloudCatalog(showToast = true) {
+    if (!firebaseBridge?.currentUser) return;
+
+    try {
+      $("#cloudStatusBadge").textContent = "Sincronizando…";
+      const payload = await firebaseBridge.loadCloudData();
+      await mergeCloudData(payload);
+      $("#cloudStatusBadge").textContent = "Firebase conectado";
+      $("#cloudStatusBadge").className = "cloud-status-badge ready";
+      if (showToast) {
+        toast("Catálogo y datos personales actualizados.", "success");
+      }
+    } catch (error) {
+      console.error(error);
+      $("#cloudStatusBadge").textContent = "Error de sincronización";
+      $("#cloudStatusBadge").className = "cloud-status-badge error";
+      if (showToast) toast(firebaseErrorMessage(error), "error");
+    }
+  }
+
+  async function handleAuthenticatedUser({ user, profile, error }) {
+    if (error) {
+      setAuthMessage(firebaseErrorMessage(error), "error");
+      return;
+    }
+
+    firebaseUser = user;
+    firebaseProfile = profile;
+
+    if (!user) {
+      $("#appShell").classList.add("hidden");
+      $("#authScreen").classList.remove("hidden");
+      setAuthMessage("Inicia sesión para continuar.");
+      return;
+    }
+
+    $("#authScreen").classList.add("hidden");
+    $("#appShell").classList.remove("hidden");
+    setAuthMessage("Sesión iniciada.", "success");
+    updateAccountUI();
+
+    await refreshCloudCatalog(false);
+
+    const migrated = Boolean(state.settings[migrationKey(user.uid)]);
+    if (!migrated && localDataCount() > 0) {
+      setTimeout(() => openMigrationModal(), 450);
+    }
+  }
+
+  async function loginWithGoogle() {
+    setAuthMessage("Abriendo acceso con Google…");
+    try {
+      await firebaseBridge.loginGoogle();
+    } catch (error) {
+      setAuthMessage(firebaseErrorMessage(error), "error");
+    }
+  }
+
+  async function loginWithEmail(event) {
+    event.preventDefault();
+    const email = $("#authEmail").value.trim();
+    const password = $("#authPassword").value;
+    setAuthMessage("Verificando cuenta…");
+
+    try {
+      await firebaseBridge.loginEmail(email, password);
+    } catch (error) {
+      setAuthMessage(firebaseErrorMessage(error), "error");
+    }
+  }
+
+  async function registerWithEmail() {
+    const email = $("#authEmail").value.trim();
+    const password = $("#authPassword").value;
+
+    if (!email || password.length < 6) {
+      setAuthMessage(
+        "Escribe un correo válido y una contraseña de al menos 6 caracteres.",
+        "error"
+      );
+      return;
+    }
+
+    setAuthMessage("Creando cuenta…");
+    try {
+      await firebaseBridge.registerEmail(email, password);
+      setAuthMessage("Cuenta creada correctamente.", "success");
+    } catch (error) {
+      setAuthMessage(firebaseErrorMessage(error), "error");
+    }
+  }
+
+  async function resetFirebasePassword() {
+    const email = $("#authEmail").value.trim();
+
+    if (!email) {
+      setAuthMessage(
+        "Escribe tu correo para enviar el enlace de recuperación.",
+        "error"
+      );
+      return;
+    }
+
+    try {
+      await firebaseBridge.resetPassword(email);
+      setAuthMessage(
+        "Revisa tu correo. Se envió el enlace de recuperación.",
+        "success"
+      );
+    } catch (error) {
+      setAuthMessage(firebaseErrorMessage(error), "error");
+    }
+  }
+
+  async function logoutFirebase() {
+    if (!confirm("¿Cerrar sesión en este dispositivo?")) return;
+    await firebaseBridge.logout();
+  }
+
   function renderAll() {
     refreshSelects();
     renderDashboard();
@@ -1335,11 +1728,34 @@
       updatedAt: Date.now()
     };
 
-    const duplicate = state.products.find((x) =>
-      x.id !== id && product.barcode && x.barcode === product.barcode
-    );
+    const normalizedProduct = [
+      product.name,
+      product.brand,
+      product.presentation
+    ].map((value) =>
+      String(value || "").trim().toLowerCase().replace(/\s+/g, " ")
+    ).join("|");
+
+    const duplicate = state.products.find((candidate) => {
+      if (candidate.id === id) return false;
+
+      const barcodeMatch =
+        product.barcode &&
+        String(candidate.barcode || "").trim() === product.barcode;
+
+      const normalizedCandidate = [
+        candidate.name,
+        candidate.brand,
+        candidate.presentation
+      ].map((value) =>
+        String(value || "").trim().toLowerCase().replace(/\s+/g, " ")
+      ).join("|");
+
+      return barcodeMatch || normalizedCandidate === normalizedProduct;
+    });
+
     if (duplicate) {
-      toast("Ya existe un producto con ese código de barras.", "error");
+      toast(`Ese producto ya existe: ${duplicate.name}.`, "error");
       return;
     }
 
@@ -2213,6 +2629,15 @@
   }
 
   function bindEvents() {
+    $("#googleLoginBtn").addEventListener("click", loginWithGoogle);
+    $("#authForm").addEventListener("submit", loginWithEmail);
+    $("#emailRegisterBtn").addEventListener("click", registerWithEmail);
+    $("#resetPasswordBtn").addEventListener("click", resetFirebasePassword);
+    $("#logoutBtn").addEventListener("click", logoutFirebase);
+    $("#startMigrationBtn").addEventListener("click", startFirebaseMigration);
+    $("#openMigrationBtn").addEventListener("click", () => openMigrationModal(true));
+    $("#refreshCloudBtn").addEventListener("click", () => refreshCloudCatalog(true));
+
     $$(".nav-btn").forEach((btn) => btn.addEventListener("click", () => navigate(btn.dataset.view)));
     $$("[data-view-target]").forEach((btn) => btn.addEventListener("click", () => navigate(btn.dataset.viewTarget)));
     $$("[data-open]").forEach((btn) => btn.addEventListener("click", () => openModal(btn.dataset.open)));
@@ -2289,7 +2714,11 @@
     try {
       db = await openDB();
       await loadState();
+
+      cloudSyncPaused = true;
       await seedDefaults();
+      cloudSyncPaused = false;
+
       bindEvents();
       renderAll();
       updateConnectionStatus();
@@ -2297,10 +2726,14 @@
       configureFileLaunchReception();
       await consumeSharedTargetPayload();
       $("#priceDate").value = today();
+
+      setAuthMessage("Conectando con Firebase…");
+      firebaseBridge = await waitForFirebaseBridge();
+      firebaseBridge.onAuthChange(handleAuthenticatedUser);
     } catch (error) {
       console.error(error);
-      toast("No se pudo iniciar la base de datos local.", "error");
-      $("#connectionStatus").textContent = "Error de almacenamiento";
+      setAuthMessage(firebaseErrorMessage(error), "error");
+      $("#connectionStatus").textContent = "Error de inicio";
     }
   }
 
