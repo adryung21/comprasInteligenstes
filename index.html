@@ -1348,6 +1348,53 @@ textarea:focus {
   }
 }
 
+
+.product-price-section {
+  grid-column: 1 / -1;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  background: var(--surface-alt);
+}
+
+.section-inline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.section-inline-header p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: .84rem;
+}
+
+.toggle-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.nested-grid {
+  margin-top: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 680px) {
+  .section-inline-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .nested-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 </style>
   <title>Mi Compra Inteligente</title>
 </head>
@@ -1358,7 +1405,7 @@ textarea:focus {
       <div class="auth-brand">
         <img src="icons/icon-192.png" alt="" />
         <div>
-          <span class="eyebrow">Versión 2.1 Firebase</span>
+          <span class="eyebrow">Versión 2.1.1 Firebase</span>
           <h1>Mi Compra Inteligente</h1>
           <p>Inicia sesión para acceder al catálogo y conservar tus datos.</p>
         </div>
@@ -1389,7 +1436,7 @@ textarea:focus {
       </form>
 
       <div id="authMessage" class="auth-message">Conectando con Firebase…</div>
-      <small class="version-label">Mi Compra Inteligente v2.1.0</small>
+      <small class="version-label">Mi Compra Inteligente v2.1.1</small>
     </div>
   </section>
 
@@ -1940,6 +1987,34 @@ textarea:focus {
         <label>Fotografía
           <input id="productImage" type="file" accept="image/*" capture="environment" />
         </label>
+
+        <div class="product-price-section">
+          <div class="section-inline-header">
+            <div>
+              <strong>Precio inicial opcional</strong>
+              <p>Registra tienda y precio desde el mismo formulario.</p>
+            </div>
+            <label class="toggle-inline">
+              <input id="productCreateWithPrice" type="checkbox" />
+              <span>Agregar precio ahora</span>
+            </label>
+          </div>
+
+          <div id="productInitialPriceFields" class="form-grid nested-grid hidden">
+            <label>Tienda
+              <select id="productInitialStore"></select>
+            </label>
+            <label>Precio
+              <input id="productInitialPrice" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00" />
+            </label>
+            <label>Fecha
+              <input id="productInitialDate" type="date" />
+            </label>
+            <label class="full-field">Nota
+              <input id="productInitialNote" maxlength="150" placeholder="Ej. Precio de apertura, promoción, compra inicial…" />
+            </label>
+          </div>
+        </div>
       </div>
       <img id="productImagePreview" class="form-image-preview hidden" alt="Vista previa del producto" />
       <div class="modal-actions">
@@ -2724,6 +2799,55 @@ textarea:focus {
   function optionList(items, placeholder, selected = "") {
     return `<option value="">${escapeHTML(placeholder)}</option>` +
       items.map((item) => `<option value="${item.id}" ${item.id === selected ? "selected" : ""}>${escapeHTML(item.name)}</option>`).join("");
+  }
+
+  function populateInitialProductPriceFields(defaultStoreId = "", defaultPrice = "", defaultDate = today(), defaultNote = "") {
+    const select = $("#productInitialStore");
+    if (select) {
+      const sortedStores = [...state.stores].sort((a, b) => a.name.localeCompare(b.name));
+      select.innerHTML = optionList(sortedStores, "Selecciona una tienda", defaultStoreId || sortedStores[0]?.id || "");
+      if (!defaultStoreId && sortedStores[0]?.id) select.value = sortedStores[0].id;
+    }
+
+    if ($("#productInitialPrice")) $("#productInitialPrice").value = defaultPrice;
+    if ($("#productInitialDate")) $("#productInitialDate").value = defaultDate || today();
+    if ($("#productInitialNote")) $("#productInitialNote").value = defaultNote || "";
+  }
+
+  function toggleProductInitialPriceFields(force = null) {
+    const enabled = force !== null ? Boolean(force) : Boolean($("#productCreateWithPrice")?.checked);
+    $("#productInitialPriceFields")?.classList.toggle("hidden", !enabled);
+    if ($("#productCreateWithPrice")) $("#productCreateWithPrice").checked = enabled;
+    if (enabled) populateInitialProductPriceFields(
+      $("#productInitialStore")?.value || "",
+      $("#productInitialPrice")?.value || "",
+      $("#productInitialDate")?.value || today(),
+      $("#productInitialNote")?.value || ""
+    );
+  }
+
+  function initialPricePayload(productId) {
+    if (!$("#productCreateWithPrice")?.checked) return null;
+    const storeId = $("#productInitialStore")?.value || "";
+    const priceValue = Number($("#productInitialPrice")?.value || 0);
+    const date = $("#productInitialDate")?.value || today();
+    const note = $("#productInitialNote")?.value.trim() || "";
+
+    if (!storeId || !(priceValue > 0)) {
+      toast("Si activas el precio inicial, debes escoger tienda y escribir un precio válido.", "error");
+      return false;
+    }
+
+    return {
+      id: uid("price"),
+      productId,
+      storeId,
+      price: priceValue,
+      date,
+      note,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
   }
 
   function refreshSelects() {
@@ -4770,6 +4894,9 @@ textarea:focus {
     $("#productImagePreview").classList.add("hidden");
     $("#productImagePreview").src = "";
     productEditingImage = "";
+    if ($("#productCreateWithPrice")) $("#productCreateWithPrice").checked = false;
+    populateInitialProductPriceFields("", "", today(), "");
+    toggleProductInitialPriceFields(false);
   }
 
   function fileToDataURL(file, maxSize = 1100, quality = 0.78) {
@@ -4795,6 +4922,7 @@ textarea:focus {
   async function handleProductSubmit(event) {
     event.preventDefault();
     const id = $("#productId").value || uid("product");
+    const editingId = $("#productId").value;
     const imageFile = $("#productImage").files[0];
     let imageData = productEditingImage;
     if (imageFile) imageData = await fileToDataURL(imageFile);
@@ -4843,11 +4971,15 @@ textarea:focus {
       return;
     }
 
+    const initialPrice = initialPricePayload(id);
+    if (initialPrice === false) return;
+
     await put("products", product);
+    if (initialPrice) await put("prices", initialPrice);
     await loadState();
     renderAll();
     closeModal("productModal");
-    toast("Producto guardado.", "success");
+    toast(initialPrice ? "Producto y precio inicial guardados." : (editingId ? "Producto actualizado." : "Producto guardado."), "success");
   }
 
   async function handlePriceSubmit(event) {
@@ -4974,6 +5106,9 @@ textarea:focus {
       } else {
         $("#productImagePreview").classList.add("hidden");
       }
+      if ($("#productCreateWithPrice")) $("#productCreateWithPrice").checked = false;
+      populateInitialProductPriceFields("", "", today(), "");
+      toggleProductInitialPriceFields(false);
       $("#productModal").showModal();
     }
 
@@ -5614,6 +5749,8 @@ textarea:focus {
       $("#productImagePreview").src = productEditingImage;
       $("#productImagePreview").classList.remove("hidden");
     }
+    populateInitialProductPriceFields("", "", today(), "");
+    toggleProductInitialPriceFields(false);
     $("#productModal").showModal();
   }
 
@@ -5735,6 +5872,7 @@ textarea:focus {
     $("#approveSubmissionBtn").addEventListener("click", () => completeSubmissionReview("approve"));
     $("#rejectSubmissionBtn").addEventListener("click", () => completeSubmissionReview("reject"));
     $("#markAlertsSeenBtn").addEventListener("click", markPriceAlertsSeen);
+    $("#productCreateWithPrice").addEventListener("change", () => toggleProductInitialPriceFields());
 
     $$(".nav-btn").forEach((btn) => btn.addEventListener("click", () => navigate(btn.dataset.view)));
     $$("[data-view-target]").forEach((btn) => btn.addEventListener("click", () => navigate(btn.dataset.viewTarget)));

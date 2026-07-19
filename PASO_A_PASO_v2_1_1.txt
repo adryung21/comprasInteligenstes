@@ -1,0 +1,11 @@
+PASO A PASO — v2.1.1
+
+1. Sube los archivos del ZIP a tu repositorio GitHub Pages y reemplaza los anteriores.
+2. Abre la app con: https://adryung21.github.io/comprasInteligenstes/?v=211
+3. Ve a Productos > + Producto.
+4. Activa “Agregar precio ahora”.
+5. Completa Tienda, Precio y Fecha.
+6. Guarda.
+7. El producto se crea y su precio queda registrado al mismo tiempo.
+
+NOTA: + Precio se mantiene para agregar nuevos precios después.
