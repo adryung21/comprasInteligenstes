@@ -9,4 +9,4 @@ export const firebaseConfig = {
 };
 
 export const ADMIN_EMAIL = "adrian90.2y@gmail.com";
-export const APP_VERSION = "2.0.2";
+export const APP_VERSION = "2.0.3";

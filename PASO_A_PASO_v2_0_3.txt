@@ -1,0 +1,32 @@
+MI COMPRA INTELIGENTE — v2.0.3 AISLAMIENTO DE USUARIOS
+
+PROBLEMA CORREGIDO
+Los datos privados de una cuenta podían permanecer en IndexedDB y mostrarse
+cuando otra cuenta iniciaba sesión en el mismo navegador o dispositivo.
+
+CAMBIOS
+- Cada precio personal, lista, historial y lista recibida queda asociado a un UID.
+- Una cuenta ya no puede ver los datos privados de otra cuenta.
+- El catálogo público continúa disponible para todos.
+- Los productos se agrupan por código de barras o por nombre, marca y presentación.
+- Los precios idénticos se muestran una sola vez.
+- La lista duplica visualmente cero artículos: conserva la cantidad mayor, no la suma.
+- Los usuarios normales ya no reciben una ventana de migración.
+- Los precios muestran la etiqueta Oficial o Mi precio.
+- Un precio oficial no se puede borrar desde la tabla personal.
+- Los datos heredados sin propietario solo pueden ser adoptados por el administrador.
+
+ACTUALIZAR
+1. Descomprime la corrección rápida.
+2. Reemplaza los archivos en GitHub.
+3. Commit changes.
+4. Abre:
+   https://adryung21.github.io/comprasInteligenstes/?v=203
+5. Inicia primero con la cuenta de usuario donde aparecían duplicados.
+6. Debe mostrar aproximadamente el catálogo real, no el doble.
+7. Cierra sesión e inicia con el administrador para verificar el aislamiento.
+
+NO CAMBIAR
+- No cambies Firestore Rules.
+- No vuelvas a migrar.
+- No borres Firestore todavía.

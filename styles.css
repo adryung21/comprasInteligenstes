@@ -1143,3 +1143,41 @@ textarea:focus {
     justify-content: flex-end;
   }
 }
+
+
+.price-source {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 6px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-size: .68rem;
+  font-weight: 900;
+}
+
+.price-source.verified {
+  background: #e6f7f1;
+  color: #08664f;
+}
+
+.price-source.personal {
+  background: #edf4ff;
+  color: var(--primary-dark);
+}
+
+#priceList td small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+@media (max-width: 720px) {
+  #priceList table {
+    min-width: 760px;
+  }
+
+  #priceList {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}

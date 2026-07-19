@@ -30,6 +30,20 @@
     settings: {}
   };
 
+  const rawLocalData = {
+    products: [],
+    stores: [],
+    categories: [],
+    prices: [],
+    shoppingItems: [],
+    purchaseHistory: [],
+    sharedLists: []
+  };
+
+  let productAliasMap = new Map();
+  let storeAliasMap = new Map();
+  let categoryAliasMap = new Map();
+
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => [...document.querySelectorAll(selector)];
 
@@ -173,22 +187,113 @@
     });
   }
 
+  function prepareLocalValue(storeName, value) {
+    if (!value || !firebaseUser) return value;
+
+    const uid = firebaseUser.uid;
+    const isAdmin = firebaseProfile?.role === "admin";
+    const prepared = { ...value };
+
+    if (storeName === "products") {
+      if (cloudSyncPaused || prepared.cloudPublic || prepared.visibility === "public") {
+        return {
+          ...prepared,
+          visibility: "public",
+          cloudPublic: Boolean(prepared.cloudPublic)
+        };
+      }
+
+      if (isAdmin) {
+        return {
+          ...prepared,
+          visibility: "public",
+          ownerUid: "",
+          status: prepared.status || "approved"
+        };
+      }
+
+      const editingPublicProduct =
+        prepared.visibility === "public" ||
+        prepared.cloudPublic ||
+        prepared.status === "approved";
+
+      return {
+        ...prepared,
+        id: editingPublicProduct && !prepared.ownerUid
+          ? `private_${uid}_${prepared.id}`
+          : prepared.id,
+        baseProductId: editingPublicProduct
+          ? (prepared.baseProductId || prepared.id)
+          : (prepared.baseProductId || ""),
+        ownerUid: uid,
+        visibility: "private",
+        cloudPublic: false,
+        status: "pending-local"
+      };
+    }
+
+    if (storeName === "stores" || storeName === "categories") {
+      if (cloudSyncPaused || prepared.visibility === "public") {
+        return { ...prepared, visibility: "public" };
+      }
+
+      return isAdmin
+        ? { ...prepared, visibility: "public", ownerUid: "" }
+        : { ...prepared, visibility: "private", ownerUid: uid };
+    }
+
+    if (storeName === "prices") {
+      if (
+        prepared.cloudVerified ||
+        prepared.visibility === "public" ||
+        prepared.source === "verified"
+      ) {
+        return {
+          ...prepared,
+          visibility: "public",
+          source: "verified",
+          ownerUid: ""
+        };
+      }
+
+      return {
+        ...prepared,
+        visibility: "private",
+        source: prepared.source || "private",
+        ownerUid: uid
+      };
+    }
+
+    if (["shoppingItems", "purchaseHistory", "sharedLists"].includes(storeName)) {
+      return {
+        ...prepared,
+        visibility: "private",
+        ownerUid: uid
+      };
+    }
+
+    return prepared;
+  }
+
   function put(storeName, value) {
+    const storedValue = prepareLocalValue(storeName, value);
+
     if (storageBackend !== "indexeddb") {
       const rows = readFallbackStore(storeName);
-      const index = rows.findIndex((row) => row.id === value.id);
-      if (index >= 0) rows[index] = value;
-      else rows.push(value);
+      const index = rows.findIndex((row) => row.id === storedValue.id);
+      if (index >= 0) rows[index] = storedValue;
+      else rows.push(storedValue);
       writeFallbackStore(storeName, rows);
-      mirrorLocalPut(storeName, value);
-      return Promise.resolve(value);
+      mirrorLocalPut(storeName, storedValue);
+      return Promise.resolve(storedValue);
     }
+
     return new Promise((resolve, reject) => {
-      const request = tx(storeName, "readwrite").put(value);
-      request.onsuccess = () => resolve(value);
+      const request = tx(storeName, "readwrite").put(storedValue);
+      request.onsuccess = () => resolve(storedValue);
       request.onerror = () => reject(request.error);
     }).then((result) => {
-      mirrorLocalPut(storeName, value);
+      mirrorLocalPut(storeName, result);
       return result;
     });
   }
@@ -234,18 +339,220 @@
     });
   }
 
-  async function loadState() {
-    const [products, stores, categories, prices, shoppingItems, settingsRows, purchaseHistory, sharedLists] =
-      await Promise.all(STORE_NAMES.map(getAll));
+  function normalizeTextKey(value) {
+    return String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+  }
 
-    state.products = products;
-    state.stores = stores;
-    state.categories = categories;
-    state.prices = prices;
-    state.shoppingItems = shoppingItems;
-    state.purchaseHistory = purchaseHistory;
-    state.sharedLists = sharedLists;
-    state.settings = Object.fromEntries(settingsRows.map((row) => [row.id, row.value]));
+  function productIdentity(product) {
+    const barcode = String(product?.barcode || "").trim();
+    if (barcode) return `barcode:${barcode}`;
+
+    return [
+      product?.name || "",
+      product?.brand || "",
+      product?.presentation || ""
+    ].map(normalizeTextKey).join("|");
+  }
+
+  function publicOrOwned(row) {
+    if (!firebaseUser) return true;
+
+    return (
+      row?.visibility === "public" ||
+      row?.cloudPublic === true ||
+      row?.cloudVerified === true ||
+      row?.source === "verified" ||
+      row?.ownerUid === firebaseUser.uid
+    );
+  }
+
+  function choosePreferredRecord(current, candidate, kind = "generic") {
+    if (!current) return candidate;
+
+    const uid = firebaseUser?.uid || "";
+    const score = (row) => {
+      let points = 0;
+      if (row.ownerUid === uid) points += 60;
+      if (row.visibility === "public") points += 45;
+      if (row.cloudPublic || row.cloudVerified || row.source === "verified") points += 40;
+      if (row.status === "approved") points += 20;
+      if (row.barcode) points += 8;
+      if (kind === "product") points += Math.min(15, String(row.description || "").length / 30);
+      points += Math.min(5, Number(row.updatedAt || row.createdAt || 0) / 1e13);
+      return points;
+    };
+
+    return score(candidate) > score(current) ? candidate : current;
+  }
+
+  function dedupeNamedRecords(rows, keyBuilder) {
+    const groups = new Map();
+    const aliasMap = new Map();
+
+    for (const row of rows) {
+      const key = keyBuilder(row);
+      if (!key) continue;
+      const preferred = choosePreferredRecord(groups.get(key), row);
+      groups.set(key, preferred);
+    }
+
+    for (const row of rows) {
+      const key = keyBuilder(row);
+      const canonical = groups.get(key);
+      if (canonical) aliasMap.set(row.id, canonical.id);
+    }
+
+    return {
+      rows: [...groups.values()],
+      aliasMap
+    };
+  }
+
+  function dedupeProducts(rows) {
+    const groups = new Map();
+    const aliases = new Map();
+
+    for (const product of rows) {
+      const key = productIdentity(product);
+      if (!key || key === "||") continue;
+      const preferred = choosePreferredRecord(groups.get(key), product, "product");
+      groups.set(key, preferred);
+    }
+
+    for (const product of rows) {
+      const canonical = groups.get(productIdentity(product));
+      if (canonical) aliases.set(product.id, canonical.id);
+    }
+
+    return {
+      rows: [...groups.values()],
+      aliasMap: aliases
+    };
+  }
+
+  function canonicalProductId(productId) {
+    return productAliasMap.get(productId) || productId;
+  }
+
+  function canonicalStoreId(storeId) {
+    return storeAliasMap.get(storeId) || storeId;
+  }
+
+  function dedupePrices(rows) {
+    const groups = new Map();
+
+    for (const original of rows) {
+      const price = {
+        ...original,
+        productId: canonicalProductId(original.productId),
+        storeId: canonicalStoreId(original.storeId)
+      };
+
+      const key = [
+        price.productId,
+        price.storeId,
+        Number(price.price).toFixed(4),
+        String(price.date || "")
+      ].join("|");
+
+      const current = groups.get(key);
+      groups.set(key, choosePreferredRecord(current, price));
+    }
+
+    return [...groups.values()];
+  }
+
+  function dedupeShoppingRows(rows) {
+    const groups = new Map();
+
+    for (const original of rows) {
+      const item = {
+        ...original,
+        productId: canonicalProductId(original.productId)
+      };
+      const key = `${item.productId}|${Boolean(item.completed)}`;
+      const current = groups.get(key);
+
+      if (!current) {
+        groups.set(key, item);
+        continue;
+      }
+
+      groups.set(key, {
+        ...choosePreferredRecord(current, item),
+        quantity: Math.max(Number(current.quantity || 1), Number(item.quantity || 1)),
+        completed: Boolean(current.completed || item.completed),
+        updatedAt: Math.max(Number(current.updatedAt || 0), Number(item.updatedAt || 0))
+      });
+    }
+
+    return [...groups.values()];
+  }
+
+  async function loadState() {
+    const [
+      products,
+      stores,
+      categories,
+      prices,
+      shoppingItems,
+      settingsRows,
+      purchaseHistory,
+      sharedLists
+    ] = await Promise.all(STORE_NAMES.map(getAll));
+
+    rawLocalData.products = products;
+    rawLocalData.stores = stores;
+    rawLocalData.categories = categories;
+    rawLocalData.prices = prices;
+    rawLocalData.shoppingItems = shoppingItems;
+    rawLocalData.purchaseHistory = purchaseHistory;
+    rawLocalData.sharedLists = sharedLists;
+
+    const visibleProducts = products.filter(publicOrOwned);
+    const visibleStores = stores.filter(publicOrOwned);
+    const visibleCategories = categories.filter(publicOrOwned);
+
+    const productResult = dedupeProducts(visibleProducts);
+    productAliasMap = productResult.aliasMap;
+    state.products = productResult.rows;
+
+    const storeResult = dedupeNamedRecords(
+      visibleStores,
+      row => normalizeTextKey(row.name)
+    );
+    storeAliasMap = storeResult.aliasMap;
+    state.stores = storeResult.rows;
+
+    const categoryResult = dedupeNamedRecords(
+      visibleCategories,
+      row => normalizeTextKey(row.name)
+    );
+    categoryAliasMap = categoryResult.aliasMap;
+    state.categories = categoryResult.rows;
+
+    state.prices = dedupePrices(prices.filter(publicOrOwned));
+
+    state.shoppingItems = dedupeShoppingRows(
+      shoppingItems.filter(row =>
+        !firebaseUser || row.ownerUid === firebaseUser.uid
+      )
+    );
+
+    state.purchaseHistory = purchaseHistory.filter(row =>
+      !firebaseUser || row.ownerUid === firebaseUser.uid
+    );
+
+    state.sharedLists = sharedLists.filter(row =>
+      !firebaseUser || row.ownerUid === firebaseUser.uid
+    );
+
+    state.settings = Object.fromEntries(
+      settingsRows.map((row) => [row.id, row.value])
+    );
   }
 
   async function seedDefaults() {
@@ -410,8 +717,17 @@
             <td>${escapeHTML(getStore(p.storeId)?.name || "Tienda eliminada")}</td>
             <td class="price-main">${money(p.price)}</td>
             <td>${localDate(p.date)}</td>
-            <td>${escapeHTML(p.note || "—")}</td>
-            <td><button class="btn btn-danger btn-sm" data-action="delete-price" data-id="${p.id}">Borrar</button></td>
+            <td>
+              ${p.source === "verified" || p.cloudVerified
+                ? `<span class="price-source verified">Oficial</span>`
+                : `<span class="price-source personal">Mi precio</span>`}
+              ${p.note ? `<small>${escapeHTML(p.note)}</small>` : ""}
+            </td>
+            <td>
+              ${p.source === "verified" || p.cloudVerified
+                ? "—"
+                : `<button class="btn btn-danger btn-sm" data-action="delete-price" data-id="${p.id}">Borrar</button>`}
+            </td>
           </tr>`).join("")}
         </tbody>
       </table>` : "No hay precios que coincidan.";
@@ -1247,6 +1563,74 @@
     });
   }
 
+  function accountIsolationKey(uid) {
+    return `accountIsolationV203_${uid}`;
+  }
+
+  async function scopeLegacyLocalDataForCurrentUser() {
+    if (!firebaseUser || firebaseProfile?.role !== "admin") return;
+
+    const key = accountIsolationKey(firebaseUser.uid);
+    if (state.settings[key]?.completed) return;
+
+    cloudSyncPaused = true;
+
+    try {
+      const publicStores = ["products", "stores", "categories"];
+      const privateStores = ["prices", "shoppingItems", "purchaseHistory", "sharedLists"];
+
+      for (const storeName of publicStores) {
+        for (const row of rawLocalData[storeName] || []) {
+          if (row.ownerUid || row.visibility) continue;
+          await put(storeName, {
+            ...row,
+            visibility: "public",
+            ownerUid: "",
+            legacyScopedAt: Date.now()
+          });
+        }
+      }
+
+      for (const storeName of privateStores) {
+        for (const row of rawLocalData[storeName] || []) {
+          if (row.ownerUid || row.visibility) continue;
+
+          const isPublicPrice =
+            storeName === "prices" &&
+            (row.cloudVerified || row.source === "verified");
+
+          await put(storeName, isPublicPrice
+            ? {
+                ...row,
+                visibility: "public",
+                source: "verified",
+                ownerUid: "",
+                legacyScopedAt: Date.now()
+              }
+            : {
+                ...row,
+                visibility: "private",
+                ownerUid: firebaseUser.uid,
+                legacyScopedAt: Date.now()
+              }
+          );
+        }
+      }
+
+      await put("settings", {
+        id: key,
+        value: {
+          completed: true,
+          completedAt: new Date().toISOString()
+        }
+      });
+
+      await loadState();
+    } finally {
+      cloudSyncPaused = false;
+    }
+  }
+
   function setAuthMessage(message, type = "") {
     const box = $("#authMessage");
     if (!box) return;
@@ -1306,12 +1690,22 @@
   }
 
   function localDataCount() {
-    return state.products.length +
-      state.stores.length +
-      state.categories.length +
-      state.prices.length +
-      state.shoppingItems.length +
-      state.purchaseHistory.length;
+    if (firebaseProfile?.role !== "admin") return 0;
+
+    return (
+      rawLocalData.products.filter(row => !row.ownerUid && !row.visibility).length +
+      rawLocalData.stores.filter(row => !row.ownerUid && !row.visibility).length +
+      rawLocalData.categories.filter(row => !row.ownerUid && !row.visibility).length +
+      rawLocalData.prices.filter(row =>
+        !row.ownerUid && !row.visibility
+      ).length +
+      rawLocalData.shoppingItems.filter(row =>
+        !row.ownerUid || row.ownerUid === firebaseUser?.uid
+      ).length +
+      rawLocalData.purchaseHistory.filter(row =>
+        !row.ownerUid || row.ownerUid === firebaseUser?.uid
+      ).length
+    );
   }
 
   function updateAccountUI() {
@@ -1332,7 +1726,9 @@
 
     const migrated = Boolean(state.settings[migrationKey(firebaseUser.uid)]);
     $("#settingsMigrationStatus").textContent =
-      migrated ? "Completada" : "Pendiente";
+      firebaseProfile?.role === "admin"
+        ? (migrated ? "Completada" : "Pendiente")
+        : "No requerida";
   }
 
   function populateMigrationModal() {
@@ -1347,6 +1743,11 @@
   function openMigrationModal(force = false) {
     if (!firebaseUser) {
       toast("Primero inicia sesión.", "error");
+      return;
+    }
+
+    if (firebaseProfile?.role !== "admin") {
+      toast("Esta cuenta no necesita migración de datos anteriores.", "success");
       return;
     }
 
@@ -1469,12 +1870,22 @@
     try {
       for (const category of payload.categories || []) {
         const local = state.categories.find(item => item.id === category.id) || {};
-        await put("categories", { ...local, ...category });
+        await put("categories", {
+          ...local,
+          ...category,
+          visibility: "public",
+          cloudPublic: true
+        });
       }
 
       for (const store of payload.stores || []) {
         const local = state.stores.find(item => item.id === store.id) || {};
-        await put("stores", { ...local, ...store });
+        await put("stores", {
+          ...local,
+          ...store,
+          visibility: "public",
+          cloudPublic: true
+        });
       }
 
       const seenProductKeys = new Set();
@@ -1521,7 +1932,9 @@
           ...local,
           ...product,
           id: targetId,
-          imageData: local.imageData || ""
+          imageData: local.imageData || "",
+          visibility: "public",
+          cloudPublic: true
         });
       }
 
@@ -1534,25 +1947,44 @@
           date: price.date || today(),
           note: price.note || "Precio oficial verificado",
           createdAt: price.createdAt || price.verifiedAt || Date.now(),
-          cloudVerified: true
+          cloudVerified: true,
+          visibility: "public",
+          source: "verified"
         });
       }
 
       for (const price of payload.privatePrices || []) {
-        const exists = state.prices.some(item => item.id === price.id);
-        if (!exists) await put("prices", { ...price, cloudPrivate: true });
+        await put("prices", {
+          ...price,
+          cloudPrivate: true,
+          visibility: "private",
+          source: "private",
+          ownerUid: firebaseUser.uid
+        });
       }
 
       for (const item of payload.shoppingItems || []) {
-        await put("shoppingItems", item);
+        await put("shoppingItems", {
+          ...item,
+          visibility: "private",
+          ownerUid: firebaseUser.uid
+        });
       }
 
       for (const record of payload.purchaseHistory || []) {
-        await put("purchaseHistory", record);
+        await put("purchaseHistory", {
+          ...record,
+          visibility: "private",
+          ownerUid: firebaseUser.uid
+        });
       }
 
       for (const list of payload.sharedLists || []) {
-        await put("sharedLists", list);
+        await put("sharedLists", {
+          ...list,
+          visibility: "private",
+          ownerUid: firebaseUser.uid
+        });
       }
 
       await loadState();
@@ -1647,6 +2079,14 @@
     firebaseProfile = profile;
 
     if (!user) {
+      productAliasMap = new Map();
+      storeAliasMap = new Map();
+      categoryAliasMap = new Map();
+      state.prices = [];
+      state.shoppingItems = [];
+      state.purchaseHistory = [];
+      state.sharedLists = [];
+
       $("#appShell").classList.add("hidden");
       $("#authScreen").classList.remove("hidden");
       setAuthMessage("Inicia sesión para continuar.");
@@ -1656,6 +2096,11 @@
     $("#authScreen").classList.add("hidden");
     $("#appShell").classList.remove("hidden");
     setAuthMessage("Sesión iniciada.", "success");
+
+    await loadState();
+    await scopeLegacyLocalDataForCurrentUser();
+    await loadState();
+    renderAll();
     updateAccountUI();
 
     const cloudMigration = await firebaseBridge.getMigrationStatus();
