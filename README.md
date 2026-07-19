@@ -1,17 +1,24 @@
-# Mi Compra Inteligente v2.0.3
+# Mi Compra Inteligente v2.1
 
-Corrección de aislamiento de cuentas y duplicados visibles.
+## Funciones nuevas
 
-## Resultado
+- Panel visible únicamente para administradores.
+- Bandeja de productos y precios pendientes.
+- Corrección administrativa antes de aprobar.
+- Aprobación y rechazo con motivo.
+- Precio personal separado del precio oficial.
+- Botón **Enviar** para solicitar verificación de un precio.
+- Sección **Mis envíos** para cada usuario.
+- Historial de precios verificados.
+- Alertas cuando cambia el precio oficial de un producto en una tienda.
+- Productos comunitarios protegidos: los usuarios proponen cambios.
+- Auditoría visible de duplicados remotos.
 
-- Catálogo público compartido.
-- Espacio privado independiente por UID.
-- Precios personales, listas e historial aislados.
-- Deduplificación local por identidad del producto.
-- Deduplificación exacta de precios.
-- Consolidación visual de la lista.
-- Datos heredados reservados al administrador.
-- Usuarios normales sin asistente de migración.
+## Datos e imágenes
 
-No se eliminan documentos de Firebase en esta versión. El panel administrativo
-posterior permitirá consolidar físicamente duplicados remotos de manera segura.
+Las fotografías continúan únicamente en IndexedDB. Firebase almacena texto,
+precios, tiendas, productos, propuestas y alertas.
+
+## Seguridad
+
+Esta versión requiere publicar el archivo `firestore.rules` incluido.

@@ -1,0 +1,46 @@
+MI COMPRA INTELIGENTE — v2.1 PANEL ADMINISTRATIVO
+
+ANTES DE SUBIR LA APLICACIÓN
+Debes actualizar las reglas de Firestore porque esta versión agrega:
+- propuestas que el usuario puede volver a enviar;
+- colección priceChanges para alertas verificadas.
+
+PASO 1 — FIRESTORE RULES
+1. Abre Firebase Console.
+2. Firestore → Reglas.
+3. Abre el archivo firestore.rules de este paquete.
+4. Copia todo.
+5. Reemplaza las reglas existentes.
+6. Pulsa Publicar.
+
+PASO 2 — GITHUB
+1. Descomprime el ZIP PUBLICAR_GITHUB.
+2. Abre el repositorio comprasInteligenstes.
+3. Add file → Upload files.
+4. Sube y reemplaza todos los archivos.
+5. Commit changes.
+
+PASO 3 — PRUEBA DE USUARIO
+1. Abre:
+   https://adryung21.github.io/comprasInteligenstes/?v=210
+2. Inicia con un usuario normal.
+3. Registra un precio escogiendo producto y tienda.
+4. En Precios pulsa Enviar.
+5. Debe aparecer En revisión.
+6. En Ajustes debe aparecer en Mis envíos.
+
+PASO 4 — PRUEBA DE ADMINISTRADOR
+1. Cierra sesión.
+2. Entra con adrian90.2y@gmail.com.
+3. Abre Administración.
+4. Pulsa Revisar.
+5. Corrige si hace falta.
+6. Aprueba o rechaza.
+
+RESULTADO
+- Al aprobar un precio, se publica como oficial.
+- Si cambia un precio anterior, se genera una alerta para usuarios.
+- Al aprobar un producto, pasa al catálogo comunitario.
+- Al rechazar, el usuario ve el motivo.
+- No se repite la migración.
+- No se suben fotografías.

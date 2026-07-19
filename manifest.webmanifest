@@ -1,7 +1,7 @@
 {
-  "name": "Mi Compra Inteligente v2",
+  "name": "Mi Compra Inteligente v2.1",
   "short_name": "Compra Inteligente",
-  "description": "Comparador de precios con autenticación Firebase y migración protegida.",
+  "description": "Comparador de precios con catálogo comunitario, propuestas, verificación administrativa y alertas.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

@@ -22,7 +22,9 @@ import {
   setDoc,
   deleteDoc,
   writeBatch,
-  serverTimestamp
+  serverTimestamp,
+  query,
+  where
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 import { firebaseConfig, ADMIN_EMAIL, APP_VERSION } from "./firebase-config.js";
 
@@ -113,7 +115,10 @@ function normalizeSnapshot(snapshot) {
       ...data,
       createdAtCloud: data.createdAtCloud?.toMillis?.() || data.createdAtCloud || null,
       updatedAtCloud: data.updatedAtCloud?.toMillis?.() || data.updatedAtCloud || null,
-      verifiedAt: data.verifiedAt?.toMillis?.() || data.verifiedAt || null
+      verifiedAt: data.verifiedAt?.toMillis?.() || data.verifiedAt || null,
+      reviewedAt: data.reviewedAt?.toMillis?.() || data.reviewedAt || null,
+      rejectedAt: data.rejectedAt?.toMillis?.() || data.rejectedAt || null,
+      changedAt: data.changedAt?.toMillis?.() || data.changedAt || null
     };
   });
 }
@@ -639,6 +644,255 @@ async function auditCloudProductDuplicates() {
   };
 }
 
+
+function isAdminProfile() {
+  return currentProfile?.role === "admin" && currentProfile?.active !== false;
+}
+
+function normalizedProductIdentity(product) {
+  const barcode = clean(product?.barcode, 30);
+  if (barcode) return `barcode:${barcode}`;
+
+  return [
+    product?.name || "",
+    product?.brand || "",
+    product?.presentation || ""
+  ].map(value =>
+    clean(value, 120).toLowerCase().replace(/\s+/g, " ")
+  ).join("|");
+}
+
+async function loadSubmissions() {
+  const user = auth.currentUser;
+  if (!user) return [];
+
+  const reference = collection(cloudDb, "submissions");
+  const snapshot = isAdminProfile()
+    ? await getDocs(reference)
+    : await getDocs(query(reference, where("createdBy", "==", user.uid)));
+
+  return normalizeSnapshot(snapshot).sort((a, b) =>
+    Number(b.createdAtCloud || 0) - Number(a.createdAtCloud || 0)
+  );
+}
+
+async function loadPriceChanges() {
+  const user = auth.currentUser;
+  if (!user) return [];
+
+  const snapshot = await getDocs(collection(cloudDb, "priceChanges"));
+  return normalizeSnapshot(snapshot)
+    .sort((a, b) => Number(b.changedAt || 0) - Number(a.changedAt || 0))
+    .slice(0, 100);
+}
+
+async function submitPriceForVerification(price, product, store) {
+  const user = auth.currentUser;
+  if (!user) throw new Error("Debes iniciar sesión.");
+
+  if (!price?.productId || !price?.storeId || !(Number(price.price) > 0)) {
+    throw new Error("El precio no contiene producto, tienda y valor válidos.");
+  }
+
+  const submissionId = `price_${user.uid}_${price.id}_${Date.now()}`;
+
+  await setDoc(doc(cloudDb, "submissions", submissionId), {
+    type: "price",
+    status: "pending",
+    createdBy: user.uid,
+    createdByEmail: user.email || "",
+    payload: {
+      priceId: price.id,
+      productId: price.productId,
+      productName: clean(product?.name || "Producto", 100),
+      storeId: price.storeId,
+      storeName: clean(store?.name || "Tienda", 100),
+      price: Number(price.price),
+      date: clean(price.date, 20),
+      note: clean(price.note, 300)
+    },
+    createdAtCloud: serverTimestamp(),
+    updatedAtCloud: serverTimestamp()
+  });
+
+  return { id: submissionId };
+}
+
+async function findOfficialProductTarget(payload) {
+  const productsSnapshot = await getDocs(collection(cloudDb, "products"));
+  const products = normalizeSnapshot(productsSnapshot);
+  const wantedIdentity = normalizedProductIdentity(payload);
+
+  const exact = products.find(product =>
+    normalizedProductIdentity(product) === wantedIdentity
+  );
+
+  if (payload.baseProductId) {
+    const base = products.find(product => product.id === payload.baseProductId);
+    if (base) return base.id;
+  }
+
+  return exact?.id || clean(payload.id, 200) || `product_${Date.now()}`;
+}
+
+async function reviewSubmission(submissionId, decision, correctedPayload = {}, reason = "") {
+  const user = auth.currentUser;
+  if (!user || !isAdminProfile()) {
+    throw new Error("Solo el administrador puede revisar propuestas.");
+  }
+
+  const submissionRef = doc(cloudDb, "submissions", submissionId);
+  const submissionSnapshot = await getDoc(submissionRef);
+
+  if (!submissionSnapshot.exists()) {
+    throw new Error("La propuesta ya no existe.");
+  }
+
+  const submission = { id: submissionSnapshot.id, ...submissionSnapshot.data() };
+
+  if (submission.status !== "pending") {
+    throw new Error("Esta propuesta ya fue revisada.");
+  }
+
+  if (decision === "reject") {
+    await setDoc(submissionRef, {
+      status: "rejected",
+      rejectionReason: clean(reason || "Información insuficiente.", 500),
+      reviewedBy: user.uid,
+      reviewedByEmail: user.email || "",
+      reviewedAt: serverTimestamp(),
+      updatedAtCloud: serverTimestamp()
+    }, { merge: true });
+
+    return { status: "rejected", type: submission.type };
+  }
+
+  const batch = writeBatch(cloudDb);
+
+  if (submission.type === "product") {
+    const payload = {
+      ...(submission.payload || {}),
+      ...(correctedPayload || {})
+    };
+
+    const targetId = await findOfficialProductTarget(payload);
+    const approvedProduct = publicProduct({
+      ...payload,
+      id: targetId,
+      ownerUid: "",
+      visibility: "public",
+      cloudPublic: true,
+      status: "approved"
+    });
+
+    batch.set(doc(cloudDb, "products", targetId), {
+      ...approvedProduct,
+      id: targetId,
+      status: "approved",
+      verifiedBy: user.uid,
+      verifiedAt: serverTimestamp(),
+      updatedAtCloud: serverTimestamp()
+    }, { merge: true });
+
+    batch.set(submissionRef, {
+      status: "approved",
+      correctedPayload: publicProduct(payload),
+      resultProductId: targetId,
+      reviewedBy: user.uid,
+      reviewedByEmail: user.email || "",
+      reviewedAt: serverTimestamp(),
+      updatedAtCloud: serverTimestamp()
+    }, { merge: true });
+  } else if (submission.type === "price") {
+    const payload = {
+      ...(submission.payload || {}),
+      ...(correctedPayload || {})
+    };
+
+    if (!payload.productId || !payload.storeId || !(Number(payload.price) > 0)) {
+      throw new Error("El precio corregido no es válido.");
+    }
+
+    const verifiedId = `${payload.productId}__${payload.storeId}`;
+    const verifiedRef = doc(cloudDb, "verifiedPrices", verifiedId);
+    const previousSnapshot = await getDoc(verifiedRef);
+    const previousData = previousSnapshot.exists() ? previousSnapshot.data() : null;
+    const previousPrice = previousData ? Number(previousData.price) : null;
+    const currentPrice = Number(payload.price);
+    const changeAmount = previousPrice === null ? 0 : currentPrice - previousPrice;
+    const changePercent =
+      previousPrice && previousPrice !== 0
+        ? (changeAmount / previousPrice) * 100
+        : 0;
+
+    const approvedPrice = {
+      id: verifiedId,
+      productId: payload.productId,
+      productName: clean(payload.productName, 100),
+      storeId: payload.storeId,
+      storeName: clean(payload.storeName, 100),
+      price: currentPrice,
+      previousPrice,
+      changeAmount,
+      changePercent,
+      date: clean(payload.date, 20),
+      note: clean(payload.note, 300),
+      status: "verified",
+      submittedBy: submission.createdBy,
+      verifiedBy: user.uid,
+      verifiedAt: serverTimestamp(),
+      updatedAtCloud: serverTimestamp()
+    };
+
+    batch.set(verifiedRef, approvedPrice, { merge: true });
+
+    const historyId = `history_${payload.productId}_${payload.storeId}_${Date.now()}`;
+    batch.set(doc(cloudDb, "priceHistory", historyId), {
+      ...approvedPrice,
+      id: historyId,
+      sourceSubmissionId: submissionId,
+      createdAtCloud: serverTimestamp()
+    });
+
+    if (previousPrice !== null && currentPrice !== previousPrice) {
+      const changeId = `change_${payload.productId}_${payload.storeId}_${Date.now()}`;
+      batch.set(doc(cloudDb, "priceChanges", changeId), {
+        id: changeId,
+        productId: payload.productId,
+        productName: clean(payload.productName, 100),
+        storeId: payload.storeId,
+        storeName: clean(payload.storeName, 100),
+        previousPrice,
+        currentPrice,
+        changeAmount,
+        changePercent,
+        changedAt: serverTimestamp(),
+        verifiedBy: user.uid,
+        sourceSubmissionId: submissionId
+      });
+    }
+
+    batch.set(submissionRef, {
+      status: "approved",
+      correctedPayload: {
+        price: currentPrice,
+        date: clean(payload.date, 20),
+        note: clean(payload.note, 300)
+      },
+      resultPriceId: verifiedId,
+      reviewedBy: user.uid,
+      reviewedByEmail: user.email || "",
+      reviewedAt: serverTimestamp(),
+      updatedAtCloud: serverTimestamp()
+    }, { merge: true });
+  } else {
+    throw new Error("Tipo de propuesta desconocido.");
+  }
+
+  await batch.commit();
+  return { status: "approved", type: submission.type };
+}
+
 async function loadCloudData() {
   const user = auth.currentUser;
   if (!user) return null;
@@ -651,7 +905,9 @@ async function loadCloudData() {
     shoppingItems,
     purchaseHistory,
     privatePrices,
-    sharedLists
+    sharedLists,
+    submissions,
+    priceChanges
   ] = await Promise.all([
     getDocs(collection(cloudDb, "products")),
     getDocs(collection(cloudDb, "stores")),
@@ -660,7 +916,9 @@ async function loadCloudData() {
     getDocs(collection(cloudDb, "users", user.uid, "shoppingItems")),
     getDocs(collection(cloudDb, "users", user.uid, "purchaseHistory")),
     getDocs(collection(cloudDb, "users", user.uid, "privatePrices")),
-    getDocs(collection(cloudDb, "users", user.uid, "sharedLists"))
+    getDocs(collection(cloudDb, "users", user.uid, "sharedLists")),
+    loadSubmissions(),
+    loadPriceChanges()
   ]);
 
   return {
@@ -671,7 +929,9 @@ async function loadCloudData() {
     shoppingItems: normalizeSnapshot(shoppingItems),
     purchaseHistory: normalizeSnapshot(purchaseHistory),
     privatePrices: normalizeSnapshot(privatePrices),
-    sharedLists: normalizeSnapshot(sharedLists)
+    sharedLists: normalizeSnapshot(sharedLists),
+    submissions,
+    priceChanges
   };
 }
 
@@ -845,6 +1105,10 @@ window.MCIFirebase = {
   migrateLocalData,
   repairCloudTimestamps,
   auditCloudProductDuplicates,
+  loadSubmissions,
+  loadPriceChanges,
+  submitPriceForVerification,
+  reviewSubmission,
   loadCloudData,
   mirrorPut,
   mirrorDelete

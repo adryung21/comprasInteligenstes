@@ -27,6 +27,9 @@
     shoppingItems: [],
     purchaseHistory: [],
     sharedLists: [],
+    submissions: [],
+    priceChanges: [],
+    adminDuplicateAudit: { duplicateGroups: [], duplicateDocuments: 0 },
     settings: {}
   };
 
@@ -684,10 +687,16 @@
             ${best ? `Mejor precio: <strong>${money(best.price)}</strong> en ${escapeHTML(getStore(best.storeId)?.name || "—")}` : "Sin precios registrados"}
           </div>
           <div class="product-actions">
-            <button class="btn btn-secondary btn-sm" data-action="edit-product" data-id="${p.id}">Editar</button>
+            <button class="btn btn-secondary btn-sm" data-action="edit-product" data-id="${p.id}">
+              ${firebaseProfile?.role === "admin" || p.ownerUid === firebaseUser?.uid
+                ? "Editar"
+                : "Proponer edición"}
+            </button>
             <button class="btn btn-secondary btn-sm" data-action="price-product" data-id="${p.id}">+ Precio</button>
             <button class="btn btn-accent btn-sm" data-action="add-product-list" data-id="${p.id}">+ Lista</button>
-            <button class="btn btn-danger btn-sm" data-action="delete-product" data-id="${p.id}">Borrar</button>
+            ${firebaseProfile?.role === "admin" || p.ownerUid === firebaseUser?.uid
+              ? `<button class="btn btn-danger btn-sm" data-action="delete-product" data-id="${p.id}">Borrar</button>`
+              : ""}
           </div>
         </div>
       </article>`;
@@ -726,7 +735,26 @@
             <td>
               ${p.source === "verified" || p.cloudVerified
                 ? "—"
-                : `<button class="btn btn-danger btn-sm" data-action="delete-price" data-id="${p.id}">Borrar</button>`}
+                : (() => {
+                    const submission = priceSubmissionFor(p);
+                    if (submission?.status === "pending") {
+                      return `<span class="status-pill pending">En revisión</span>`;
+                    }
+                    if (submission?.status === "approved") {
+                      return `<span class="status-pill approved">Aprobado</span>`;
+                    }
+                    return `
+                      <div class="submission-card-actions">
+                        <button class="btn btn-secondary btn-sm"
+                          data-action="submit-price-verification" data-id="${p.id}">
+                          ${submission?.status === "rejected" ? "Reenviar" : "Enviar"}
+                        </button>
+                        <button class="btn btn-danger btn-sm"
+                          data-action="delete-price" data-id="${p.id}">
+                          Borrar
+                        </button>
+                      </div>`;
+                  })()}
             </td>
           </tr>`).join("")}
         </tbody>
@@ -1724,6 +1752,11 @@
     $("#footerStorageStatus").textContent =
       "IndexedDB local + Firebase · Fotografías privadas en este dispositivo";
 
+    const isAdmin = firebaseProfile?.role === "admin";
+    $$(".admin-only").forEach(element =>
+      element.classList.toggle("hidden", !isAdmin)
+    );
+
     const migrated = Boolean(state.settings[migrationKey(firebaseUser.uid)]);
     $("#settingsMigrationStatus").textContent =
       firebaseProfile?.role === "admin"
@@ -1987,6 +2020,9 @@
         });
       }
 
+      state.submissions = payload.submissions || [];
+      state.priceChanges = payload.priceChanges || [];
+
       await loadState();
       renderAll();
       updateAccountUI();
@@ -2134,6 +2170,8 @@
 
     if (firebaseProfile?.role === "admin") {
       const audit = await firebaseBridge.auditCloudProductDuplicates();
+      state.adminDuplicateAudit = audit;
+      renderAdminPanel();
       if (audit.duplicateDocuments > 0) {
         toast(
           `Firebase contiene ${audit.duplicateDocuments} productos duplicados. No se migrará nuevamente; se revisarán en la próxima herramienta administrativa.`,
@@ -2213,6 +2251,330 @@
     await firebaseBridge.logout();
   }
 
+  function submissionStatusLabel(status) {
+    return {
+      pending: "Pendiente",
+      approved: "Aprobado",
+      rejected: "Rechazado"
+    }[status] || status || "Pendiente";
+  }
+
+  function submissionStatusClass(status) {
+    return ["pending", "approved", "rejected"].includes(status)
+      ? status
+      : "pending";
+  }
+
+  function priceSubmissionFor(price) {
+    return [...state.submissions]
+      .filter(submission =>
+        submission.type === "price" &&
+        submission.payload?.priceId === price.id
+      )
+      .sort((a, b) =>
+        Number(b.createdAtCloud || 0) - Number(a.createdAtCloud || 0)
+      )[0] || null;
+  }
+
+  function renderPriceAlerts() {
+    const panel = $("#priceAlertsPanel");
+    if (!panel || !firebaseUser) return;
+
+    const seenKey = `seenPriceChanges_${firebaseUser.uid}`;
+    const seen = new Set(state.settings[seenKey] || []);
+    const unseen = state.priceChanges.filter(change => !seen.has(change.id));
+
+    panel.classList.toggle("hidden", unseen.length === 0);
+    $("#priceAlertsDescription").textContent =
+      unseen.length === 1
+        ? "Tienes un cambio oficial de precio sin revisar."
+        : `Tienes ${unseen.length} cambios oficiales de precio sin revisar.`;
+
+    $("#priceAlertsList").innerHTML = unseen.slice(0, 8).map(change => {
+      const amount = Number(change.changeAmount || 0);
+      const direction = amount > 0 ? "increase" : "decrease";
+      const sign = amount > 0 ? "+" : "";
+      return `
+        <article class="price-change-alert">
+          <div>
+            <strong>${escapeHTML(change.productName || getProduct(change.productId)?.name || "Producto")}</strong>
+            <p>${escapeHTML(change.storeName || getStore(change.storeId)?.name || "Tienda")} ·
+              ${money(change.previousPrice)} → ${money(change.currentPrice)}</p>
+          </div>
+          <div class="price-change-value">
+            <strong class="${direction}">${sign}${money(amount)}</strong>
+            <span class="${direction}">${sign}${Number(change.changePercent || 0).toFixed(1)}%</span>
+          </div>
+        </article>`;
+    }).join("");
+  }
+
+  async function markPriceAlertsSeen() {
+    if (!firebaseUser) return;
+    const key = `seenPriceChanges_${firebaseUser.uid}`;
+    const ids = state.priceChanges.slice(0, 100).map(change => change.id);
+
+    cloudSyncPaused = true;
+    await put("settings", { id: key, value: ids });
+    cloudSyncPaused = false;
+    await loadState();
+    renderPriceAlerts();
+  }
+
+  function renderUserSubmissions() {
+    const container = $("#userSubmissionsList");
+    if (!container) return;
+
+    const rows = [...state.submissions]
+      .filter(submission =>
+        firebaseProfile?.role === "admin" ||
+        submission.createdBy === firebaseUser?.uid
+      )
+      .sort((a, b) =>
+        Number(b.createdAtCloud || 0) - Number(a.createdAtCloud || 0)
+      );
+
+    container.className = rows.length
+      ? "submission-list"
+      : "submission-list empty-state";
+
+    container.innerHTML = rows.length
+      ? rows.slice(0, 20).map(submission => {
+          const payload = submission.payload || {};
+          const title = submission.type === "price"
+            ? `${payload.productName || "Producto"} · ${payload.storeName || "Tienda"}`
+            : payload.name || "Producto propuesto";
+          const detail = submission.type === "price"
+            ? `${money(payload.price)} · ${localDate(payload.date)}`
+            : [payload.brand, payload.presentation].filter(Boolean).join(" · ");
+
+          return `
+            <article class="submission-card">
+              <div class="submission-card-head">
+                <div>
+                  <h4>${escapeHTML(title)}</h4>
+                  <p>${escapeHTML(detail || (submission.type === "price" ? "Precio" : "Producto"))}</p>
+                </div>
+                <span class="status-pill ${submissionStatusClass(submission.status)}">
+                  ${submissionStatusLabel(submission.status)}
+                </span>
+              </div>
+              ${submission.rejectionReason
+                ? `<div class="submission-card-body"><strong>Motivo:</strong>
+                    <span>${escapeHTML(submission.rejectionReason)}</span></div>`
+                : ""}
+            </article>`;
+        }).join("")
+      : "Todavía no has enviado información.";
+  }
+
+  function renderAdminPanel() {
+    const adminView = $("#view-admin");
+    const adminNav = $("#adminNavBtn");
+    const isAdmin = firebaseProfile?.role === "admin";
+
+    adminView?.classList.toggle("hidden", !isAdmin);
+    adminNav?.classList.toggle("hidden", !isAdmin);
+    if (!isAdmin) return;
+
+    const filter = $("#adminSubmissionFilter")?.value || "pending";
+    const pendingProducts = state.submissions.filter(
+      submission => submission.status === "pending" && submission.type === "product"
+    );
+    const pendingPrices = state.submissions.filter(
+      submission => submission.status === "pending" && submission.type === "price"
+    );
+    const reviewed = state.submissions.filter(
+      submission => submission.status !== "pending"
+    );
+
+    $("#adminPendingProducts").textContent = pendingProducts.length;
+    $("#adminPendingPrices").textContent = pendingPrices.length;
+    $("#adminReviewedCount").textContent = reviewed.length;
+    $("#adminDuplicateCount").textContent =
+      state.adminDuplicateAudit?.duplicateDocuments || 0;
+
+    let rows = [...state.submissions];
+    if (filter === "pending") rows = rows.filter(row => row.status === "pending");
+    if (filter === "product") rows = rows.filter(row => row.type === "product");
+    if (filter === "price") rows = rows.filter(row => row.type === "price");
+
+    rows.sort((a, b) =>
+      Number(b.createdAtCloud || 0) - Number(a.createdAtCloud || 0)
+    );
+
+    const container = $("#adminSubmissionList");
+    container.className = rows.length
+      ? "submission-list"
+      : "submission-list empty-state";
+
+    container.innerHTML = rows.length
+      ? rows.map(submission => {
+          const payload = submission.payload || {};
+          const isPrice = submission.type === "price";
+          const title = isPrice
+            ? `${payload.productName || "Producto"} · ${payload.storeName || "Tienda"}`
+            : payload.name || "Producto nuevo";
+          const detail = isPrice
+            ? `${money(payload.price)} · ${localDate(payload.date)}`
+            : [payload.brand, payload.presentation, payload.barcode]
+                .filter(Boolean).join(" · ");
+
+          return `
+            <article class="submission-card">
+              <div class="submission-card-head">
+                <div>
+                  <h4>${escapeHTML(title)}</h4>
+                  <p>${escapeHTML(detail || "Sin detalles")}<br>
+                    Enviado por ${escapeHTML(submission.createdByEmail || submission.createdBy || "Usuario")}</p>
+                </div>
+                <span class="status-pill ${submissionStatusClass(submission.status)}">
+                  ${submissionStatusLabel(submission.status)}
+                </span>
+              </div>
+              ${submission.status === "pending"
+                ? `<div class="submission-card-actions">
+                    <button class="btn btn-primary btn-sm"
+                      data-action="review-submission" data-id="${submission.id}">
+                      Revisar
+                    </button>
+                  </div>`
+                : submission.rejectionReason
+                  ? `<div class="submission-card-body">
+                      <strong>Motivo de rechazo</strong>
+                      <span>${escapeHTML(submission.rejectionReason)}</span>
+                    </div>`
+                  : ""}
+            </article>`;
+        }).join("")
+      : "No hay propuestas que coincidan.";
+
+    const duplicates = state.adminDuplicateAudit?.duplicateDocuments || 0;
+    $("#adminDuplicateSummary").textContent = duplicates
+      ? `Firestore contiene ${duplicates} documentos duplicados adicionales. Están ocultos visualmente y no afectan el uso actual.`
+      : "No se detectaron duplicados remotos.";
+  }
+
+  function openAdminReviewModal(submissionId) {
+    const submission = state.submissions.find(item => item.id === submissionId);
+    if (!submission || submission.status !== "pending") return;
+
+    const payload = submission.payload || {};
+    $("#adminReviewSubmissionId").value = submission.id;
+    $("#adminReviewType").value = submission.type;
+    $("#adminReviewReason").value = "";
+
+    const productFields = $("#adminProductReviewFields");
+    const priceFields = $("#adminPriceReviewFields");
+    productFields.classList.toggle("hidden", submission.type !== "product");
+    priceFields.classList.toggle("hidden", submission.type !== "price");
+
+    if (submission.type === "product") {
+      $("#adminReviewTitle").textContent = "Revisar producto";
+      $("#adminProductName").value = payload.name || "";
+      $("#adminProductBrand").value = payload.brand || "";
+      $("#adminProductDescription").value = payload.description || "";
+      $("#adminProductPresentation").value = payload.presentation || "";
+      $("#adminProductBarcode").value = payload.barcode || "";
+      $("#adminProductCategory").innerHTML = optionList(
+        [...state.categories].sort((a, b) => a.name.localeCompare(b.name)),
+        "Selecciona una categoría",
+        payload.categoryId || ""
+      );
+    } else {
+      $("#adminReviewTitle").textContent = "Revisar precio";
+      $("#adminPriceProductName").textContent =
+        payload.productName || getProduct(payload.productId)?.name || "Producto";
+      $("#adminPriceStoreName").textContent =
+        payload.storeName || getStore(payload.storeId)?.name || "Tienda";
+      $("#adminPriceValue").value = Number(payload.price || 0).toFixed(2);
+      $("#adminPriceDate").value = payload.date || today();
+      $("#adminPriceNote").value = payload.note || "";
+    }
+
+    $("#adminReviewModal").showModal();
+  }
+
+  function adminCorrectedPayload() {
+    const type = $("#adminReviewType").value;
+
+    if (type === "product") {
+      return {
+        name: $("#adminProductName").value.trim(),
+        brand: $("#adminProductBrand").value.trim(),
+        description: $("#adminProductDescription").value.trim(),
+        presentation: $("#adminProductPresentation").value.trim(),
+        categoryId: $("#adminProductCategory").value,
+        barcode: $("#adminProductBarcode").value.trim()
+      };
+    }
+
+    return {
+      price: Number($("#adminPriceValue").value),
+      date: $("#adminPriceDate").value,
+      note: $("#adminPriceNote").value.trim()
+    };
+  }
+
+  async function completeSubmissionReview(decision) {
+    const submissionId = $("#adminReviewSubmissionId").value;
+    const reason = $("#adminReviewReason").value.trim();
+
+    if (decision === "reject" && !reason) {
+      toast("Escribe el motivo del rechazo.", "error");
+      return;
+    }
+
+    const approveButton = $("#approveSubmissionBtn");
+    const rejectButton = $("#rejectSubmissionBtn");
+    approveButton.disabled = true;
+    rejectButton.disabled = true;
+
+    try {
+      await firebaseBridge.reviewSubmission(
+        submissionId,
+        decision,
+        adminCorrectedPayload(),
+        reason
+      );
+
+      closeModal("adminReviewModal");
+      await refreshCloudCatalog(false);
+      toast(
+        decision === "approve"
+          ? "Información aprobada y publicada."
+          : "Propuesta rechazada.",
+        "success"
+      );
+    } catch (error) {
+      toast(firebaseErrorMessage(error), "error");
+    } finally {
+      approveButton.disabled = false;
+      rejectButton.disabled = false;
+    }
+  }
+
+  async function submitPriceVerification(priceId) {
+    const price = state.prices.find(item => item.id === priceId);
+    if (!price || price.source === "verified" || price.cloudVerified) return;
+
+    const product = getProduct(price.productId);
+    const store = getStore(price.storeId);
+
+    if (!product || !store) {
+      toast("No se encontró el producto o la tienda.", "error");
+      return;
+    }
+
+    try {
+      await firebaseBridge.submitPriceForVerification(price, product, store);
+      await refreshCloudCatalog(false);
+      toast("Precio enviado para verificación.", "success");
+    } catch (error) {
+      toast(firebaseErrorMessage(error), "error");
+    }
+  }
+
   function renderAll() {
     refreshSelects();
     renderDashboard();
@@ -2222,6 +2584,9 @@
     renderShopping();
     renderSettings();
     renderHistoryAndSharedLists();
+    renderPriceAlerts();
+    renderUserSubmissions();
+    renderAdminPanel();
   }
 
   function configurePriceProduct(productId = "") {
@@ -2520,6 +2885,14 @@
     if (action === "delete-price") {
       if (!confirmAction("¿Borrar este precio?")) return;
       await remove("prices", id);
+    }
+
+    if (action === "submit-price-verification") {
+      await submitPriceVerification(id);
+    }
+
+    if (action === "review-submission") {
+      openAdminReviewModal(id);
     }
 
     if (action === "toggle-shopping") {
@@ -3235,6 +3608,12 @@
     $("#startMigrationBtn").addEventListener("click", startFirebaseMigration);
     $("#openMigrationBtn").addEventListener("click", () => openMigrationModal(true));
     $("#refreshCloudBtn").addEventListener("click", () => refreshCloudCatalog(true));
+    $("#refreshSubmissionsBtn").addEventListener("click", () => refreshCloudCatalog(true));
+    $("#refreshAdminBtn").addEventListener("click", () => refreshCloudCatalog(true));
+    $("#adminSubmissionFilter").addEventListener("change", renderAdminPanel);
+    $("#approveSubmissionBtn").addEventListener("click", () => completeSubmissionReview("approve"));
+    $("#rejectSubmissionBtn").addEventListener("click", () => completeSubmissionReview("reject"));
+    $("#markAlertsSeenBtn").addEventListener("click", markPriceAlertsSeen);
 
     $$(".nav-btn").forEach((btn) => btn.addEventListener("click", () => navigate(btn.dataset.view)));
     $$("[data-view-target]").forEach((btn) => btn.addEventListener("click", () => navigate(btn.dataset.viewTarget)));

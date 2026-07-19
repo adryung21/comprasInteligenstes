@@ -1181,3 +1181,158 @@ textarea:focus {
     -webkit-overflow-scrolling: touch;
   }
 }
+
+
+.admin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 14px;
+}
+
+.submission-list {
+  display: grid;
+  gap: 12px;
+}
+
+.submission-card {
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: var(--surface-alt);
+}
+
+.submission-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.submission-card h4 {
+  margin: 0 0 4px;
+}
+
+.submission-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: .86rem;
+  line-height: 1.45;
+}
+
+.submission-card-body {
+  display: grid;
+  gap: 5px;
+  margin-top: 12px;
+  padding: 11px;
+  border-radius: 11px;
+  background: white;
+  border: 1px solid var(--border);
+}
+
+.submission-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.status-pill {
+  display: inline-flex;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.status-pill.pending {
+  background: #fff2d6;
+  color: #745209;
+}
+
+.status-pill.approved {
+  background: #e6f7f1;
+  color: #08664f;
+}
+
+.status-pill.rejected {
+  background: #fff0f0;
+  color: #9d2525;
+}
+
+.price-alerts-panel {
+  margin-bottom: 17px;
+  border-color: #f1cf6d;
+  background: #fffaf0;
+}
+
+.alert-list {
+  display: grid;
+  gap: 9px;
+}
+
+.price-change-alert {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  padding: 12px 13px;
+  border: 1px solid #ead78e;
+  border-radius: 12px;
+  background: white;
+}
+
+.price-change-alert p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: .82rem;
+}
+
+.price-change-value {
+  text-align: right;
+}
+
+.price-change-value strong {
+  display: block;
+}
+
+.price-change-value span {
+  font-size: .76rem;
+  font-weight: 900;
+}
+
+.price-change-value .increase {
+  color: #b42318;
+}
+
+.price-change-value .decrease {
+  color: #087a5b;
+}
+
+.admin-review-actions {
+  flex-wrap: wrap;
+}
+
+.user-submissions-panel {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 900px) {
+  .admin-stats-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .submission-card-head,
+  .price-change-alert {
+    grid-template-columns: 1fr;
+  }
+
+  .price-change-value {
+    text-align: left;
+  }
+
+  .admin-review-actions .btn {
+    width: 100%;
+  }
+}
