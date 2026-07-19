@@ -1,3 +1,45 @@
+# Mi Compra Inteligente — PWA v1.7 Quick Share
+
+## Compartir sin buscar archivos
+
+El botón **Compartir por Quick Share** genera un paquete completo y abre el menú nativo de Android. Desde allí puede elegirse Quick Share, WhatsApp, correo, Bluetooth u otra aplicación compatible.
+
+El paquete incluye:
+
+- Lista y cantidades.
+- Productos completos.
+- Nombre, marca, descripción y presentación.
+- Categoría y código de barras.
+- Fotografía guardada del producto.
+- Tiendas vinculadas.
+- Todos los precios registrados de los productos de la lista.
+- Fecha y nota de cada precio.
+
+## Recibir
+
+La PWA está registrada como destino de contenido compartido. En un dispositivo compatible e instalada desde HTTPS:
+
+1. Acepta el paquete mediante Quick Share.
+2. Abre o comparte el archivo con **Mi Compra Inteligente**.
+3. La aplicación muestra una vista previa.
+4. Elige:
+   - **Guardar como lista recibida**, o
+   - **Combinar con lista activa**.
+
+En ambos casos, los productos y precios se incorporan al catálogo del dispositivo receptor sin borrar los datos existentes.
+
+## Duplicados
+
+- Primero compara el código de barras.
+- Si no existe, compara nombre, marca y presentación.
+- Conserva la descripción más completa.
+- No repite un precio idéntico de la misma tienda, fecha y valor.
+- Conserva la fotografía local y usa la recibida si el producto local no tiene una.
+
+## Compatibilidad
+
+Quick Share depende del menú de compartir y del navegador/sistema operativo. Cuando el navegador no admite archivos mediante Web Share, la PWA descarga el paquete como alternativa. La importación manual continúa disponible dentro de **Listas recibidas → Importación manual de compatibilidad**.
+
 # Mi Compra Inteligente v1.6
 
 Incluye finalización de compra, historial local, informes imprimibles/PDF, listas compartidas separadas y creación de nueva lista.

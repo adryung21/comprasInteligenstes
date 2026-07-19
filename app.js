@@ -13,6 +13,7 @@
   let capturedImageData = "";
   let scanData = null;
   let productEditingImage = "";
+  let pendingReceivedPackage = null;
 
   const state = {
     products: [],
@@ -326,7 +327,7 @@
     const categoryId = $("#productCategoryFilter").value;
     const products = [...state.products]
       .filter((p) => !categoryId || p.categoryId === categoryId)
-      .filter((p) => [p.name, p.brand, p.presentation, p.barcode].join(" ").toLowerCase().includes(query))
+      .filter((p) => [p.name, p.brand, p.description, p.presentation, p.barcode].join(" ").toLowerCase().includes(query))
       .sort((a, b) => a.name.localeCompare(b.name));
 
     const container = $("#productList");
@@ -343,6 +344,7 @@
           <h3>${escapeHTML(p.name)}</h3>
           <div class="product-meta">
             ${p.brand ? `${escapeHTML(p.brand)}<br>` : ""}
+            ${p.description ? `<span>${escapeHTML(p.description.length > 110 ? `${p.description.slice(0, 110)}…` : p.description)}</span><br>` : ""}
             ${p.presentation ? `${escapeHTML(p.presentation)}<br>` : ""}
             ${p.barcode ? `Código: ${escapeHTML(p.barcode)}` : "Sin código"}
           </div>
@@ -654,7 +656,12 @@
     sc.innerHTML = shared.length ? shared.map(s => `
       <article class="history-card">
         <div class="history-card-head"><div><h4>${escapeHTML(s.name)}</h4>
-        <p>${s.items.length} artículos · importada ${new Date(s.importedAt).toLocaleString("es-EC")}</p></div></div>
+        <p>${s.items.length} artículos · recibida ${new Date(s.importedAt).toLocaleString("es-EC")}</p>
+        <div class="shared-package-stats">
+          <span>${s.packageStats?.products ?? s.items.length} productos</span>
+          <span>${s.packageStats?.prices ?? 0} precios</span>
+          <span>${s.packageStats?.stores ?? 0} tiendas</span>
+        </div></div></div>
         <div class="history-card-actions">
           <button class="btn btn-secondary btn-sm" data-action="activate-shared" data-id="${s.id}">Abrir como nueva</button>
           <button class="btn btn-secondary btn-sm" data-action="merge-shared" data-id="${s.id}">Combinar</button>
@@ -670,7 +677,7 @@
         state.products.find(p => p.name.toLowerCase() === String(row.name||"").toLowerCase());
       if (!product) {
         product = {id:uid("product"),name:row.name||"Producto importado",brand:row.brand||"",
-          presentation:"",categoryId:state.categories.find(c=>c.name===row.category)?.id || state.categories[0]?.id || "",
+          description:row.description||"",presentation:row.presentation||"",categoryId:state.categories.find(c=>c.name===row.category)?.id || state.categories[0]?.id || "",
           barcode:"",imageData:"",createdAt:Date.now(),updatedAt:Date.now()};
         await put("products", product);
       }
@@ -711,21 +718,508 @@
     w.document.close();
   }
 
-  function exportSharedList() {
-    if (!state.shoppingItems.length) return toast("La lista está vacía.","error");
-    const payload={type:"mi-compra-shared-list",version:1,name:`Lista compartida ${new Date().toLocaleDateString("es-EC")}`,
-      exportedAt:new Date().toISOString(),items:shoppingSnapshot().map(i=>({productId:i.productId,name:i.name,brand:i.brand,category:i.category,quantity:i.quantity}))};
-    const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}), url=URL.createObjectURL(blob), a=document.createElement("a");
-    a.href=url;a.download=`lista-compra-${today()}.json`;a.click();URL.revokeObjectURL(url);
+  function normalizedProductKey(product) {
+    return [
+      product.name || "",
+      product.brand || "",
+      product.presentation || ""
+    ].map(value => String(value).trim().toLowerCase().replace(/\s+/g, " ")).join("|");
+  }
+
+  function safeFileName(value) {
+    return String(value || "lista-compra")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9-_]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 70) || "lista-compra";
+  }
+
+  function buildCompleteSharedPackage(listName) {
+    const activeItems = state.shoppingItems.map(item => ({
+      productId: item.productId,
+      quantity: Number(item.quantity),
+      completed: Boolean(item.completed)
+    }));
+
+    const productIds = [...new Set(activeItems.map(item => item.productId))];
+    const products = state.products
+      .filter(product => productIds.includes(product.id))
+      .map(product => ({
+        id: product.id,
+        name: product.name,
+        brand: product.brand || "",
+        description: product.description || "",
+        presentation: product.presentation || "",
+        categoryId: product.categoryId || "",
+        categoryName: getCategory(product.categoryId)?.name || "Otros",
+        barcode: product.barcode || "",
+        imageData: product.imageData || "",
+        createdAt: product.createdAt || Date.now(),
+        updatedAt: product.updatedAt || Date.now()
+      }));
+
+    const prices = state.prices
+      .filter(price => productIds.includes(price.productId))
+      .map(price => ({
+        id: price.id,
+        productId: price.productId,
+        storeId: price.storeId,
+        storeName: getStore(price.storeId)?.name || "Tienda importada",
+        price: Number(price.price),
+        date: price.date || "",
+        note: price.note || "",
+        createdAt: price.createdAt || Date.now()
+      }));
+
+    const storeIds = [...new Set(prices.map(price => price.storeId).filter(Boolean))];
+    const stores = state.stores
+      .filter(store => storeIds.includes(store.id))
+      .map(store => ({ id: store.id, name: store.name }));
+
+    const categoryIds = [...new Set(products.map(product => product.categoryId).filter(Boolean))];
+    const categories = state.categories
+      .filter(category => categoryIds.includes(category.id))
+      .map(category => ({ id: category.id, name: category.name }));
+
+    return {
+      type: "mi-compra-complete-package",
+      version: 2,
+      app: "Mi Compra Inteligente",
+      exportedAt: new Date().toISOString(),
+      list: {
+        id: uid("shared_list"),
+        name: listName,
+        createdAt: Date.now(),
+        items: activeItems
+      },
+      catalog: {
+        products,
+        categories,
+        stores,
+        prices
+      }
+    };
+  }
+
+  function downloadSharedPackage(file) {
+    const url = URL.createObjectURL(file);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = file.name;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function exportSharedList() {
+    if (!state.shoppingItems.length) {
+      toast("La lista está vacía.", "error");
+      return;
+    }
+
+    const defaultName = `Lista de compra ${new Date().toLocaleDateString("es-EC")}`;
+    const listName = prompt("Nombre de la lista que vas a compartir:", defaultName);
+
+    if (!listName?.trim()) return;
+
+    const payload = buildCompleteSharedPackage(listName.trim());
+    const jsonText = JSON.stringify(payload);
+    const file = new File(
+      [jsonText],
+      `${safeFileName(listName)}.json`,
+      { type: "application/json" }
+    );
+
+    if (file.size > 25 * 1024 * 1024) {
+      const proceed = confirm(
+        `El paquete pesa ${(file.size / 1024 / 1024).toFixed(1)} MB porque contiene fotografías. ¿Deseas compartirlo de todas formas?`
+      );
+      if (!proceed) return;
+    }
+
+    try {
+      if (
+        navigator.share &&
+        (!navigator.canShare || navigator.canShare({ files: [file] }))
+      ) {
+        await navigator.share({
+          title: listName.trim(),
+          text: "Lista completa de Mi Compra Inteligente con productos y precios.",
+          files: [file]
+        });
+        toast("Lista enviada al menú de compartir del dispositivo.", "success");
+        return;
+      }
+    } catch (error) {
+      if (error?.name === "AbortError") return;
+      console.warn("No fue posible usar el menú de compartir:", error);
+    }
+
+    downloadSharedPackage(file);
+    toast(
+      "Este navegador no permitió Quick Share directamente. Se descargó el paquete como alternativa.",
+      "error"
+    );
+  }
+
+  function normalizeIncomingPackage(data) {
+    if (data?.type === "mi-compra-complete-package" && Number(data.version) >= 2) {
+      if (!data.list || !Array.isArray(data.list.items) || !data.catalog) {
+        throw new Error("El paquete completo está incompleto.");
+      }
+      return data;
+    }
+
+    if (data?.type === "mi-compra-shared-list" && Array.isArray(data.items)) {
+      const products = data.items.map(item => ({
+        id: item.productId || uid("remote_product"),
+        name: item.name || "Producto importado",
+        brand: item.brand || "",
+        description: item.description || "",
+        presentation: item.presentation || "",
+        categoryId: "",
+        categoryName: item.category || "Otros",
+        barcode: item.barcode || "",
+        imageData: item.imageData || ""
+      }));
+
+      return {
+        type: "mi-compra-complete-package",
+        version: 2,
+        app: "Mi Compra Inteligente",
+        exportedAt: data.exportedAt || new Date().toISOString(),
+        list: {
+          id: uid("shared_list"),
+          name: data.name || "Lista compartida",
+          createdAt: Date.now(),
+          items: data.items.map(item => ({
+            productId: item.productId,
+            quantity: Number(item.quantity || 1),
+            completed: Boolean(item.completed)
+          }))
+        },
+        catalog: {
+          products,
+          categories: [],
+          stores: [],
+          prices: []
+        }
+      };
+    }
+
+    throw new Error("El archivo no corresponde a una lista de Mi Compra Inteligente.");
+  }
+
+  function showReceivedPackagePreview(rawData) {
+    try {
+      const data = normalizeIncomingPackage(rawData);
+      pendingReceivedPackage = data;
+
+      $("#receivedShareName").textContent = data.list.name || "Lista compartida";
+      $("#receivedItemsCount").textContent = data.list.items.length;
+      $("#receivedProductsCount").textContent = data.catalog.products?.length || 0;
+      $("#receivedPricesCount").textContent = data.catalog.prices?.length || 0;
+      $("#receivedStoresCount").textContent = data.catalog.stores?.length || 0;
+
+      $("#receivedShareModal").showModal();
+    } catch (error) {
+      pendingReceivedPackage = null;
+      toast(error.message || "No se pudo leer el paquete.", "error");
+    }
+  }
+
+  async function importCompletePackage(rawData, mode = "save") {
+    const data = normalizeIncomingPackage(rawData);
+    const remoteCategories = Array.isArray(data.catalog.categories) ? data.catalog.categories : [];
+    const remoteStores = Array.isArray(data.catalog.stores) ? data.catalog.stores : [];
+    const remoteProducts = Array.isArray(data.catalog.products) ? data.catalog.products : [];
+    const remotePrices = Array.isArray(data.catalog.prices) ? data.catalog.prices : [];
+
+    const localCategories = [...state.categories];
+    const localStores = [...state.stores];
+    const localProducts = [...state.products];
+    const localPrices = [...state.prices];
+
+    const categoryMap = new Map();
+    const storeMap = new Map();
+    const productMap = new Map();
+
+    async function ensureCategory(remoteId, name) {
+      const categoryName = String(name || "Otros").trim() || "Otros";
+      let local = localCategories.find(
+        category => category.name.toLowerCase() === categoryName.toLowerCase()
+      );
+
+      if (!local) {
+        local = { id: uid("cat"), name: categoryName };
+        await put("categories", local);
+        localCategories.push(local);
+      }
+
+      if (remoteId) categoryMap.set(remoteId, local.id);
+      return local.id;
+    }
+
+    async function ensureStore(remoteId, name) {
+      const storeName = String(name || "Tienda importada").trim() || "Tienda importada";
+      let local = localStores.find(
+        store => store.name.toLowerCase() === storeName.toLowerCase()
+      );
+
+      if (!local) {
+        local = { id: uid("store"), name: storeName };
+        await put("stores", local);
+        localStores.push(local);
+      }
+
+      if (remoteId) storeMap.set(remoteId, local.id);
+      return local.id;
+    }
+
+    for (const category of remoteCategories) {
+      await ensureCategory(category.id, category.name);
+    }
+
+    for (const store of remoteStores) {
+      await ensureStore(store.id, store.name);
+    }
+
+    for (const remote of remoteProducts) {
+      const categoryId = await ensureCategory(
+        remote.categoryId,
+        remote.categoryName ||
+          remoteCategories.find(category => category.id === remote.categoryId)?.name ||
+          "Otros"
+      );
+
+      const barcode = String(remote.barcode || "").trim();
+      const remoteKey = normalizedProductKey(remote);
+
+      let local = barcode
+        ? localProducts.find(product => String(product.barcode || "").trim() === barcode)
+        : null;
+
+      if (!local) {
+        local = localProducts.find(product => normalizedProductKey(product) === remoteKey);
+      }
+
+      if (local) {
+        const mergedDescription =
+          String(remote.description || "").length > String(local.description || "").length
+            ? String(remote.description || "")
+            : String(local.description || "");
+
+        const updated = {
+          ...local,
+          brand: local.brand || remote.brand || "",
+          description: mergedDescription,
+          presentation: local.presentation || remote.presentation || "",
+          categoryId: local.categoryId || categoryId,
+          barcode: local.barcode || barcode,
+          imageData: local.imageData || remote.imageData || "",
+          updatedAt: Date.now()
+        };
+
+        await put("products", updated);
+        Object.assign(local, updated);
+      } else {
+        local = {
+          id: uid("product"),
+          name: remote.name || "Producto importado",
+          brand: remote.brand || "",
+          description: remote.description || "",
+          presentation: remote.presentation || "",
+          categoryId,
+          barcode,
+          imageData: remote.imageData || "",
+          createdAt: remote.createdAt || Date.now(),
+          updatedAt: Date.now()
+        };
+
+        await put("products", local);
+        localProducts.push(local);
+      }
+
+      productMap.set(remote.id, local.id);
+    }
+
+    for (const remotePrice of remotePrices) {
+      const localProductId = productMap.get(remotePrice.productId);
+      if (!localProductId) continue;
+
+      const localStoreId =
+        storeMap.get(remotePrice.storeId) ||
+        await ensureStore(remotePrice.storeId, remotePrice.storeName);
+
+      const exists = localPrices.some(price =>
+        price.productId === localProductId &&
+        price.storeId === localStoreId &&
+        Number(price.price) === Number(remotePrice.price) &&
+        String(price.date || "") === String(remotePrice.date || "") &&
+        String(price.note || "") === String(remotePrice.note || "")
+      );
+
+      if (exists) continue;
+
+      const importedPrice = {
+        id: uid("price"),
+        productId: localProductId,
+        storeId: localStoreId,
+        price: Number(remotePrice.price),
+        date: remotePrice.date || today(),
+        note: remotePrice.note || "Importado desde lista compartida",
+        createdAt: remotePrice.createdAt || Date.now()
+      };
+
+      await put("prices", importedPrice);
+      localPrices.push(importedPrice);
+    }
+
+    const localItems = data.list.items.map(item => {
+      const remoteProduct = remoteProducts.find(product => product.id === item.productId);
+      const localProductId = productMap.get(item.productId);
+      const localProduct = localProducts.find(product => product.id === localProductId);
+
+      return {
+        productId: localProductId,
+        name: localProduct?.name || remoteProduct?.name || "Producto importado",
+        brand: localProduct?.brand || remoteProduct?.brand || "",
+        description: localProduct?.description || remoteProduct?.description || "",
+        presentation: localProduct?.presentation || remoteProduct?.presentation || "",
+        category: localCategories.find(category => category.id === localProduct?.categoryId)?.name || "Otros",
+        quantity: Number(item.quantity || 1),
+        completed: Boolean(item.completed)
+      };
+    }).filter(item => item.productId);
+
+    if (mode === "save") {
+      await put("sharedLists", {
+        id: uid("shared"),
+        name: data.list.name || "Lista recibida",
+        items: localItems,
+        importedAt: Date.now(),
+        packageStats: {
+          products: remoteProducts.length,
+          prices: remotePrices.length,
+          stores: remoteStores.length
+        }
+      });
+    }
+
+    if (mode === "merge") {
+      for (const row of localItems) {
+        const existing = state.shoppingItems.find(
+          item => item.productId === row.productId && !item.completed
+        );
+
+        if (existing) {
+          existing.quantity = Number(existing.quantity) + Number(row.quantity);
+          existing.updatedAt = Date.now();
+          await put("shoppingItems", existing);
+        } else {
+          await put("shoppingItems", {
+            id: uid("shopping"),
+            productId: row.productId,
+            quantity: Number(row.quantity),
+            completed: false,
+            createdAt: Date.now()
+          });
+        }
+      }
+    }
+
+    await loadState();
+    renderAll();
+
+    return {
+      items: localItems.length,
+      products: remoteProducts.length,
+      prices: remotePrices.length
+    };
   }
 
   async function importSharedList(file) {
     try {
-      const data=JSON.parse(await file.text());
-      if (data.type!=="mi-compra-shared-list" || !Array.isArray(data.items)) throw new Error();
-      await put("sharedLists",{id:uid("shared"),name:data.name||"Lista compartida",items:data.items,importedAt:Date.now()});
-      await loadState();renderAll();toast("Lista importada sin reemplazar la lista activa.","success");
-    } catch { toast("El archivo no es una lista compartida válida.","error"); }
+      const data = JSON.parse(await file.text());
+      showReceivedPackagePreview(data);
+    } catch {
+      toast("No se pudo abrir el paquete recibido.", "error");
+    }
+  }
+
+  async function savePendingReceivedPackage(mode) {
+    if (!pendingReceivedPackage) return;
+
+    const button =
+      mode === "merge" ? $("#mergeReceivedListBtn") : $("#saveReceivedListBtn");
+    const originalText = button.textContent;
+
+    button.disabled = true;
+    button.textContent = "Importando…";
+
+    try {
+      const result = await importCompletePackage(pendingReceivedPackage, mode);
+      closeModal("receivedShareModal");
+      pendingReceivedPackage = null;
+
+      toast(
+        mode === "merge"
+          ? `Lista combinada. Se incorporaron ${result.products} productos y ${result.prices} precios.`
+          : `Lista guardada. Se incorporaron ${result.products} productos y ${result.prices} precios.`,
+        "success"
+      );
+
+      navigate("shopping");
+    } catch (error) {
+      toast(error.message || "No se pudo importar el paquete.", "error");
+    } finally {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  }
+
+  async function consumeSharedTargetPayload() {
+    const params = new URLSearchParams(location.search);
+    if (!params.has("receivedShare")) return;
+
+    try {
+      if ("serviceWorker" in navigator) {
+        await navigator.serviceWorker.ready;
+      }
+
+      const response = await fetch("./__share_inbox__", {
+        cache: "no-store"
+      });
+
+      if (!response.ok) {
+        throw new Error("No se encontró el paquete compartido.");
+      }
+
+      const data = await response.json();
+      showReceivedPackagePreview(data);
+      navigate("shopping");
+    } catch (error) {
+      toast(error.message || "No se pudo recibir la lista.", "error");
+    } finally {
+      history.replaceState({}, "", "./index.html");
+    }
+  }
+
+  function configureFileLaunchReception() {
+    if (!("launchQueue" in window)) return;
+
+    launchQueue.setConsumer(async launchParams => {
+      const handle = launchParams.files?.[0];
+      if (!handle) return;
+
+      try {
+        const file = await handle.getFile();
+        await importSharedList(file);
+        navigate("shopping");
+      } catch {
+        toast("No se pudo abrir el archivo compartido.", "error");
+      }
+    });
   }
 
   function renderAll() {
@@ -832,6 +1326,7 @@
       id,
       name: $("#productName").value.trim(),
       brand: $("#productBrand").value.trim(),
+      description: $("#productDescription").value.trim(),
       presentation: $("#productPresentation").value.trim(),
       categoryId: $("#productCategory").value,
       barcode: $("#productBarcode").value.trim(),
@@ -967,6 +1462,7 @@
       $("#productId").value = p.id;
       $("#productName").value = p.name;
       $("#productBrand").value = p.brand || "";
+      $("#productDescription").value = p.description || "";
       $("#productPresentation").value = p.presentation || "";
       $("#productCategory").value = p.categoryId || "";
       $("#productBarcode").value = p.barcode || "";
@@ -1062,7 +1558,7 @@
     if (action === "merge-shared") {
       const list=state.sharedLists.find(x=>x.id===id);
       if(list){ for(const row of list.items){ let p=state.products.find(x=>x.id===row.productId)||state.products.find(x=>x.name.toLowerCase()===String(row.name).toLowerCase());
-        if(!p){p={id:uid("product"),name:row.name,brand:row.brand||"",presentation:"",categoryId:state.categories.find(c=>c.name===row.category)?.id||state.categories[0]?.id||"",barcode:"",imageData:"",createdAt:Date.now(),updatedAt:Date.now()};await put("products",p);}
+        if(!p){p={id:uid("product"),name:row.name,brand:row.brand||"",description:row.description||"",presentation:row.presentation||"",categoryId:state.categories.find(c=>c.name===row.category)?.id||state.categories[0]?.id||"",barcode:"",imageData:"",createdAt:Date.now(),updatedAt:Date.now()};await put("products",p);}
         const ex=state.shoppingItems.find(x=>x.productId===p.id&&!x.completed); if(ex){ex.quantity=Number(ex.quantity)+Number(row.quantity||1);await put("shoppingItems",ex);}else await put("shoppingItems",{id:uid("shopping"),productId:p.id,quantity:Number(row.quantity||1),completed:false,createdAt:Date.now()});
       }}
     }
@@ -1705,12 +2201,15 @@
       : "Sin conexión · modo local activo";
   }
 
-  function registerServiceWorker() {
+  async function registerServiceWorker() {
     if ("serviceWorker" in navigator && isSecureAppOrigin()) {
-      navigator.serviceWorker.register("sw.js").catch(() => {
+      try {
+        return await navigator.serviceWorker.register("sw.js");
+      } catch {
         toast("No se pudo activar el modo sin conexión.", "error");
-      });
+      }
     }
+    return null;
   }
 
   function bindEvents() {
@@ -1758,7 +2257,13 @@
     $("#finishPurchaseBtn").addEventListener("click", finishPurchase);
     $("#newListBtn").addEventListener("click", async()=>{if(!state.shoppingItems.length||confirm("¿Limpiar la lista activa y comenzar una nueva?")){for(const i of state.shoppingItems)await remove("shoppingItems",i.id);await loadState();renderAll();}});
     $("#exportSharedListBtn").addEventListener("click", exportSharedList);
-    $("#sharedListInput").addEventListener("change", e=>e.target.files[0]&&importSharedList(e.target.files[0]));
+    $("#sharedListInput").addEventListener("change", event => {
+      const file = event.target.files[0];
+      if (file) importSharedList(file);
+      event.target.value = "";
+    });
+    $("#saveReceivedListBtn").addEventListener("click", () => savePendingReceivedPackage("save"));
+    $("#mergeReceivedListBtn").addEventListener("click", () => savePendingReceivedPackage("merge"));
 
 
     window.addEventListener("online", updateConnectionStatus);
@@ -1788,7 +2293,9 @@
       bindEvents();
       renderAll();
       updateConnectionStatus();
-      registerServiceWorker();
+      await registerServiceWorker();
+      configureFileLaunchReception();
+      await consumeSharedTargetPayload();
       $("#priceDate").value = today();
     } catch (error) {
       console.error(error);

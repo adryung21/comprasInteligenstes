@@ -772,3 +772,115 @@ footer {
 .history-card-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 @media(max-width:620px){.shopping-header-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}.shopping-header-actions .btn{width:100%}}
 @media print{body>*{display:none!important}#printReport{display:block!important}}
+
+
+textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 10px 12px;
+  color: var(--text);
+  background: white;
+  outline: none;
+  resize: vertical;
+  font: inherit;
+}
+
+textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(11,94,215,.12);
+}
+
+.share-receive-guide {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid #b9d8ff;
+  background: #edf4ff;
+  color: var(--primary-dark);
+  line-height: 1.45;
+}
+
+.share-receive-guide span {
+  color: #36547e;
+  font-size: .88rem;
+}
+
+.manual-import-details {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px dashed var(--border);
+  border-radius: 13px;
+  background: var(--surface-alt);
+}
+
+.manual-import-details summary {
+  cursor: pointer;
+  font-weight: 900;
+  color: var(--muted);
+}
+
+.manual-import-details p {
+  margin: 9px 0 12px;
+  color: var(--muted);
+  font-size: .85rem;
+}
+
+.received-package-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.received-package-summary div {
+  padding: 13px;
+  border-radius: 13px;
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+}
+
+.received-package-summary span {
+  display: block;
+  color: var(--muted);
+  font-size: .75rem;
+}
+
+.received-package-summary strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 1.25rem;
+}
+
+.received-actions {
+  flex-wrap: wrap;
+}
+
+.shared-package-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.shared-package-stats span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: white;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: .74rem;
+  font-weight: 800;
+}
+
+@media (max-width: 620px) {
+  .received-package-summary {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+
+  .received-actions .btn {
+    width: 100%;
+  }
+}

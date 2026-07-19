@@ -1,7 +1,7 @@
 {
   "name": "Mi Compra Inteligente",
   "short_name": "Mi Compra",
-  "description": "Comparador personal de precios y lista de compras interactiva.",
+  "description": "Comparador de precios, listas de compras e intercambio completo de productos mediante Quick Share.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -33,5 +33,47 @@
     "productivity",
     "utilities"
   ],
-  "lang": "es"
+  "lang": "es",
+  "share_target": {
+    "action": "./share-target",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "shared_list",
+          "accept": [
+            "application/json",
+            ".json"
+          ]
+        }
+      ]
+    }
+  },
+  "file_handlers": [
+    {
+      "action": "./index.html",
+      "accept": {
+        "application/json": [
+          ".json"
+        ]
+      }
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Abrir lista de compra",
+      "short_name": "Lista",
+      "url": "./index.html#shopping",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
 }
